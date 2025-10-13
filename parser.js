@@ -328,7 +328,7 @@ const parser = (function(){
 		{
 			//console.log("keywords:",keywords);
 			this.keywords = keywords.sort(function(a,b){
-				return a.length-b.length;
+				return b.length-a.length;
 			});
 			this.keywords = this.keywords.filter(element => element !== undefined);
 			//console.log("sorted keywords:",this.keywords);
@@ -337,7 +337,7 @@ const parser = (function(){
 		{
 			//console.log("types:",types);
 			this.typeNames = types.sort(function(a,b){
-				return a.length-b.length;
+				return b.length-a.length;
 			});
 			this.typeNames = this.typeNames.filter(element => element !== undefined);
 			//console.log("sorted types:",this.typeNames);
@@ -345,7 +345,7 @@ const parser = (function(){
 		sortTypeModifiers:function(){
 			//console.log("modifiers:",typeModifiers);
 			this.typeModifiers = typeModifiers.sort(function(a,b){
-				return a.length-b.length;
+				return b.length-a.length;
 			});
 			this.typeModifiers = this.typeModifiers.filter(element => element !== undefined);
 			//console.log("sorted modifiers:",this.typeModifiers);
@@ -357,7 +357,7 @@ const parser = (function(){
 			this.sortedOperations = Object.keys(operations);
 			//console.log("operations:",this.sortedOperations);
 			this.sortedOperations = this.sortedOperations.sort(function(a,b){
-				return a.length-b.length;
+				return b.length-a.length;
 			});
 			this.sortedOperations = this.sortedOperations.filter(element=>element != undefined);
 			//console.log("sorted operations:",this.sortedOperations);
@@ -990,7 +990,7 @@ const parser = (function(){
 			{
 				args.push(this.readDefinition());
 				if(this.lookAhead(")")){
-					console.log("Arguments:",args);
+					//console.log("Arguments:",args);
 					//console.log("Found Early )");
 					this.consume(")");
 					return args;
@@ -1035,9 +1035,11 @@ const parser = (function(){
 					
 				};
 			}else if (this.lookAhead("if")){
+				//console.log("Parse If");
 				this.consume("(");
 				var statement = {type:"IfStatement",pos:position};
 				statement.condition = this.parseExpression(")");
+				this.skipBlanks();
 				statement.body = this.parseBody();
 				if(this.lookAhead("else"))
 				{
@@ -1182,10 +1184,12 @@ const parser = (function(){
 			}
 			else if ( this.numberIncoming())
 			{
+				var numberValue=this.readNumber(); 
 				expression = {
 					type:"Literal",
 					literalType:"Number",
-					value:this.readNumber(),
+					defineType:numberValue.numberType,
+					value:numberValue.value,
 				};
 				//console.log("Read Number:",expression);
 			}
@@ -1285,18 +1289,75 @@ const parser = (function(){
 			}
 			else
 			{
-				if(this.currentCharacter){
-					
-				}else{
-			
-				}
 				return false;
 			}
 		},
 		readNumber:function(keepBlanks)
 		{
-			var val = this.read(/[0-9\.]/,"Number",/[0-9]/,keepBlanks);
-			return parseFloat(val);
+			if(this.currentCharacter=='0' &&this.nextCharacter=='b')
+			{
+				var numberValue=this.readBinaryNumber(keepBlanks); 
+				return { value:numberValue,"numberType":"base2Integer"};
+			}
+			else if ( this.currentCharacter=='0' && /[0-7]/.test(this.nextCharacter))
+			{
+				var numberValue=this.readOctalNumber(keepBlanks);
+				return { value:numberValue,"numberType":"base8Integer"};
+			}
+			else if(this.currentCharacter =='0' && this.nextCharacter=='x')
+			{
+				var numberValue=this.readHexNumber(keepBlanks);
+				return { value:numberValue,"numberType":"base16Integer"};
+			}
+			else
+			{ 
+				var _line=file.line;
+				var _lineCharacterPosition=file.lineCharacterPosition;
+				var _characterPosition = file.characterPosition;
+				var decimalCount=0;
+				while(this.currentCharacter&&/[0-9\.]/.test(this.currentCharacter))
+				{
+					this.next();
+					if(this.currentCharacter=='.' && decimalCount==0)
+					{
+						decimalCount++;
+					}
+					else if(this.currentCharacter=='.' && decimalCount>0)
+					{
+						this.unexpected("Too many decimals");
+					}
+				}
+				file.characterPosition=_characterPosition;
+				file.lineCharacterPosition=_lineCharacterPosition;
+				file.line = _line;
+				this.currentCharacter=file.content[file.characterPosition];
+				if(file.characterPosition>0){
+					this.lastCharacter=file.content[file.characterPosition-1];
+				}else{
+					this.lastCharacter=undefined;
+				}
+				if(file.content.length>file.characterPosition+1)
+				{
+					this.nextCharacter = file.content[file.characterPosition+1];
+				}
+				else
+				{
+					this.nextCharacter=undefined;
+				}
+				if(decimalCount==0)
+				{
+					var numberValue = this.readBase10Number(keepBlanks);
+					return { value:numberValue,"numberType":"base10Integer"};
+				}
+				else
+				{
+					//TODO: distinguish double from float
+					//TODO: support scientific notation
+					var numberValue = this.read(/[0-9\.]/,"Number",/[0-9]/,keepBlanks);
+					return { value:parseFloat(numberValue),"numberType":"singleFloat"};
+				}
+				
+			}
 		},
 		readOctalNumber:function(keepBlanks)
 		{
@@ -1313,6 +1374,11 @@ const parser = (function(){
 			var val = this.read(/[0-1]/,"Number",/[0-1]/,keepBlanks);
 			return parseInt(val,2);
 		},
+		readBase10Number:function(keepBlanks)
+		{
+			var val = this.read(/[0-9]/,"Number",/[0-9]/,keepBlanks);
+			return parseInt(val,10);
+		},
 		stringIncoming:function()
 		{
 			return this.currentCharacter && this.currentCharacter == "\"";
@@ -1321,9 +1387,11 @@ const parser = (function(){
 		{
 			//console.log("Read String");
 			var val = [];
+			var stringCharacterCount=0;
 			this.next(true,true);
 			while(this.currentCharacter && this.currentCharacter != "\"")
 			{
+				
 				if(this.currentCharacter =="\\")
 				{
 					this.next(true,true);
@@ -1331,6 +1399,11 @@ const parser = (function(){
 				}else{
 					val.push(this.currentCharacter);
 					this.next(true,true);
+				}
+				stringCharacterCount++;
+				if(stringCharacterCount>maxCharactersPerString)
+				{
+					this.unexpected("String length too long:"+stringCharacterCount.toString()+" "+maxCharactersPerString.toString());
 				}
 			}
 			if(!this.lookAhead("\"",keepBlanks))
@@ -1341,11 +1414,15 @@ const parser = (function(){
 			return val.join("");
 		},
 		peekBinaryOperation:function(){
+			//console.log("peekBinaryOperation");
+
 			var _line=file.line;
 			var _lineCharacterPosition=file.lineCharacterPosition;
 			var _characterPosition = file.characterPosition;
-			for( var index = 0 ; index < this.sortedOperations ; index++ )
+			//console.log("Sorted Operations:",this.sortedOperations);
+			for( var index = 0 ; index < this.sortedOperations.length ; index++ )
 			{
+				//console.log("Searching For LookAhead:",this.sortedOperations[index]," for: ",this.currentCharacter," ",this.nextCharacter);
 				if(this.lookAhead(this.sortedOperations[index])){
 					file.characterPosition=_characterPosition;
 					file.lineCharacterPosition=_lineCharacterPosition;
@@ -1364,19 +1441,22 @@ const parser = (function(){
 					{
 						this.nextCharacter=undefined;
 					}
+					//console.log("Found:"+this.sortedOperations[index]);
 					return this.sortedOperations[index];
 				}
 			}
+			return false;
 		},
 		parseBinary:function(left,minPrec){
 			var lookAhead = this.peekBinaryOperation();
-			while(lookAhead && this.operations[LookAhead]>= minPrec)
+			while(lookAhead && this.operations[lookAhead]>= minPrec)
 			{
-				var operation = LookAhead;
+				//console.log("LookAhead:",lookAhead);
+				var operation = lookAhead;
 				var position = file.characterPosition;
 				this.consume (operation);
 				var right = this.parseUnary();
-				lookAhead = peekBinaryOperation();
+				lookAhead = this.peekBinaryOperation();
 				while(lookAhead && this.operations[lookAhead] > this.operations[operation])
 				{
 					right = this.parseBinary(right,this.operations[LookAhead]);
@@ -1398,35 +1478,141 @@ const parser = (function(){
 			//console.log("Expression:",theExpression);
 			for(var statement in theExpression)
 			{
-				switch(theExpression[statement].type){
-					case "FunctionDefinition":
-						this.printFunctionDefinition(theExpression[statement]);
-					break;
-					case "CallStatement":
-						this.printCallStatement(theExpression[statement]);
-					break;
-					case "ExpressionStatement":
-						this.printExpressionStatement(theExpression[statement]);
-					break;
-					case "ReturnStatement":
-						this.printReturnStatement(theExpression[statement]);
-					break;
-					case "VariableDeclaration":
-						this.printVariableDeclaration(theExpression[statement]);
-					break;
-					case "PreProcessorExpression":
-						this.printPreprocessorExpression(theExpression[statement]);
-					break;
-					case "StructDefinition":
-						this.printStructDefinition(theExpression[statement]);
-					break;
-					case "EnumDefinition":
-						this.printEnumDefinition(theExpression[statement]);
-					break;
-					default:
-						console.log("Unhandled statement type:",theExpression[statement]);
+				if(theExpression[statement].type!=undefined)
+				{
+					switch(theExpression[statement].type){
+						case "FunctionDefinition":
+							this.printFunctionDefinition(theExpression[statement]);
+						break;
+						case "CallStatement":
+							this.printCallStatement(theExpression[statement]);
+						break;
+						case "ExpressionStatement":
+							this.printExpressionStatement(theExpression[statement]);
+						break;
+						case "ReturnStatement":
+							this.printReturnStatement(theExpression[statement]);
+						break;
+						case "VariableDeclaration":
+							this.printVariableDeclaration(theExpression[statement],true,true);
+						break;
+						case "PreProcessorExpression":
+							this.printPreprocessorExpression(theExpression[statement]);
+						break;
+						case "StructDefinition":
+							this.printStructDefinition(theExpression[statement]);
+						break;
+						case "EnumDefinition":
+							this.printEnumDefinition(theExpression[statement]);
+						break;
+						case "BinaryExpression":
+							this.printBinaryExpression(theExpression[statement]);
+						break;
+						case "SuffixExpression":
+							this.printSuffixExpression(theExpression[statement]);
+						break;
+						case "ForStatement":
+							process.stdout.write("for(");
+							switch(theExpression[statement].init.type){
+								case "VariableDeclaration":
+									this.printVariableDeclaration(theExpression[statement].init);
+								break;
+								default:
+									console.log("[print]Unhandled for loop init type:[",theExpression[statement].init.type,"]");
+									
+							}
+							switch(theExpression[statement].condition.type)
+							{
+								case "BinaryExpression":
+									this.printBinaryExpression(theExpression[statement].condition);
+								break;
+								default:
+									console.log("[print]Unhandled for loop condition type:"+theExpression[statement].condition.type);
+							}
+							process.stdout.write(";");
+							switch(theExpression[statement].step.type)
+							{
+								case "SuffixExpression":
+									process.stdout.write(theExpression[statement].step.value.value.toString() +theExpression[statement].step.operator); 
+								break;
+							}
+							process.stdout.write("){\n");
+							this.tabCount++;
+							this.print(theExpression[statement].body);
+							this.tabCount--;
+							this.printTabs();
+							process.stdout.write("}\n");
+						break;
+						case "IfStatement":
+						//console.log(theExpression[statement]);
+							this.printTabs();
+							process.stdout.write("if(");
+							switch(theExpression[statement].condition.type)
+							{
+								case "BinaryExpression":
+									this.printBinaryExpression(theExpression[statement].condition);
+								break;
+								default:
+									console.log("[print]Unhandled IfStatement type:",theExpression[statement].condition.type);
+							}
+							process.stdout.write("){\n");
+							this.tabCount++;
+							for(var index in theExpression[statement].body)
+							{
+								this.printTabs();
+								
+								this.print(theExpression[statement].body);
+							}
+							this.tabCount--;
+							this.printTabs();
+							process.stdout.write("}\n");
+						break;
+						default:
+							console.log("[print]Unhandled statement type:[",theExpression[statement],"]");
+					}
+				}
+				else
+				{
+					console.log("[print]theExpression[statement].type is undefined:[",theExpression[statement],"]");
 				}
 			}
+		},
+		printBinaryExpression(theExpression){
+			switch(theExpression.left.type)
+			{
+				case "Identifier":
+					this.printIdentifier(theExpression.left);
+				break;
+				case "Literal":
+					process.stdout.write(theExpression.left.value.toString());
+				break;
+				default:
+					console.log("[printBinaryExpression]Unhandled left binary expression type:",theExpression.left.type);
+			}
+			process.stdout.write(" " + theExpression.operator+ " ");
+			switch(theExpression.right.type)
+			{
+				case "Identifier":
+					this.printIdentifier(theExpression.right);
+				break;
+				case "Literal":
+					process.stdout.write(theExpression.right.value.toString());
+				break;
+				default:
+					console.log("[printBinaryExpression]Unhandled right binary expression type:",theExpression.right.type);
+			}
+		},
+		printSuffixExpression(theExpression){
+			switch(theExpression.type)
+			{
+				case "Identifier":
+					this.printIdentifier(theExpression.value);
+				break;
+			}
+			process.stdout.write(theExpression.operator);
+		},
+		printIdentifier(theIdentifier){
+			process.stdout.write(theIdentifier.value.toString());
 		},
 		printFunctionDefinition:function(functionDefinition)
 		{
@@ -1561,9 +1747,12 @@ const parser = (function(){
 					console.log("Unhandled literal type:",literal.literalType);
 			}
 		},
-		printVariableDeclaration(declaration)
+		printVariableDeclaration(declaration,printTabs,wantNewLine)
 		{
-			this.printTabs();
+			//console.log(declaration);
+			if(printTabs){
+				this.printTabs();
+			}
 			switch(declaration.defType.type)
 			{
 				case "Type":
@@ -1571,6 +1760,7 @@ const parser = (function(){
 					{
 						process.stdout.write(declaration.defType.modifier.toString()+" ");
 					}
+					process.stdout.write(declaration.defType.name+" ");
 					process.stdout.write(declaration.name.toString()+" = ");
 					switch(declaration.value.type)
 					{
@@ -1581,7 +1771,11 @@ const parser = (function(){
 						default:
 							console.log("Unhandled variable declaration type:",declaration.value.type);
 					}
-					process.stdout.write(";\n");
+					process.stdout.write(";");
+					if(wantNewLine)
+					{
+						process.stdout.write("\n");
+					}
 				break;
 				default:
 					console.log("Unhandled variable declaration type:",declaration.defType.type);
@@ -1863,11 +2057,13 @@ const parser = (function(){
 					}
 					else if(this.numberIncoming())
 					{
-						statement.typedef.defineType="base10IntegerDefine";
-						statement.typedef.val=this.readNumber();
+						var numberValue= this.readNumber();;
+						statement.typedef.defineType=numberValue.numberType;
+						statement.typedef.value=numberValue.value;
+						
 						this.statements.push(statement);
 					}
-					else if (this.lookAhead("("))
+					else if(this.lookAhead("("))
 					{
 						// this is a potentially a function
 						this.unexpected("Define Expressions Not Yet Implemented");
@@ -1921,7 +2117,7 @@ const { stdin, stdout } = require('node:process');
 //console.log("IsTty(stdout):",process.stdout.isTTY);
 process.stdout.setDefaultEncoding('utf-8');
 
-const statements = parser.parse("\n#include <stdio.h>\n#include \"test.h\"\n#define TEST\n#define TEST_STRING \"test\"\n#define TEST_CHAR '\\n'\n#define TEST_NUMBER_INT 1234\n\n#define TEST_NUMBER_HEX 0x12FF\n\n#define TEST_NUMBER_OCT 0123\n\n#define TEST_NUMBER_BIN 0b01010101\nstruct st_test{int a;char*b;};enum e_one{this,that,the_other};\nint main(){\n\tint index=0;\n\tif(index==0)\n\t{\n\t\tfor(int loop_index=0;loop_index<10;loop_index++){\n\t\t\tprintf(\"Hello World!\\n\");\n\t\t}\n\t}\n\treturn 0;\n}\n","main.c");
+const statements = parser.parse("\n#include <stdio.h>\n#include \"test.h\"\n#define TEST\n#define TEST_STRING \"test\"\n#define TEST_CHAR '\\n'\n#define TEST_NUMBER_INT 1234\n\n#define TEST_NUMBER_HEX 0x12FF\n\n#define TEST_NUMBER_OCT 0123\n\n#define TEST_NUMBER_BIN 0b01010101\nstruct st_test{int a;char*b;};enum e_one{this,that,the_other};\nint main(){\n\tint index=0;\n\tif(index==0)\n\t{\n\t\tfor(int loop_index=0;loop_index<10;loop_index++){\n\t\t\tswitch(loop_index){\n\t\t\t\tcase 0:\n\t\t\t\tcase 2:\n\t\t\t\tcase 4:\n\t\t\t\tcase 6:\n\t\t\t\tcase 8:\n\t\t\t\t\tprintf(\"Hello World!\\n\");\n\t\t\t\tbreak;\n\t\t\t\tcase 1:\n\t\t\t\tcase 3:\n\t\t\t\tcase 5:\n\t\t\t\tcase 7:\n\t\t\t\t\tprintf(\"\\n\");\n\t\t\t\tbreak;\n\t\t\t\tdefault:\n\t\t\t\t\tprintf(\"Undefined\");\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t}\n\treturn 0;\n}\n","main.c");
 //const preprocessed = parser.preprocess(statements);
 //console.log("Before Print");
 parser.print(statements);

@@ -323,6 +323,7 @@ const parser = (function(){
 		sortedOperations:[],
 		tabCount:0,
 		defineConstants:{},
+		defines:[],
 		EOF:false,
 		sortKeywords:function()
 		{
@@ -954,13 +955,21 @@ const parser = (function(){
 			}
 			else
 			{
-				console.error ("Not Identifier");
+				//this.unexpected ("Not Identifier");
 				return false;
 			}
 		},
 		readIdentifier:function(keepBlanks)
 		{
-			return this.read(/[A-Za-z0-9_]/,"Identifier",/[A-Za-z_]/,keepBlanks);
+			var identifier = this.read(/[A-Za-z0-9_]/,"Identifier",/[A-Za-z_]/,keepBlanks);
+			if(!keywords.includes(identifier))
+			{
+				return identifier;
+			}
+			else
+			{
+				this.unexpected("Can't use keyword as identifier:[",identifier,"]");
+			}
 		},
 		read:function(reg,expected,startreg,keepBlanks){
 			startreg = startreg||reg;
@@ -1001,6 +1010,108 @@ const parser = (function(){
 			//console.log("Found )");
 			this.consume(")");
 			return args;
+		},
+		parseSwitchBody:function(){
+			var switchStatement={type:"SwitchStatement",conditions:[],pos:file.characterPosition};
+			var conditions=[];
+			var expressions=[];
+			var conditionsBlock={type:"ConditionsBlock",body:[],conditions:[],pos:file.characterPosition};
+			var expression={type:"CaseBody",body:[],pos:file.characterPosition};
+			var body=[];
+			var first=true;
+			var foundDefault=false;
+			
+			this.consume("{");
+			while(!(this.currentCharacter=='}'||this.currentCharacter==undefined))
+			{
+				var condition={};
+				
+				this.skipBlanks();
+				if(this.lookAhead("case"))
+				{
+					if(!first)
+					{
+						if(conditionsBlock.body.length>0)
+						{
+							statement.conditions.push(conditionsBlock);
+							conditionsBlock={type:"ConditionsBlock",body:[],conditions:[],pos:file.characterPosition};
+						}
+					}
+					first=false;
+					
+					if(this.numberIncoming())
+					{
+						condition.type="Literal";
+						condition.literalType = "Number";
+						condition.value = this.readNumber();
+						this.consume(":");
+					}
+					else if (this.currentCharacter=='\'')
+					{
+						condition.type="Literal";
+						condition.literalType = "Character";
+						condition.value =this.readCharacter();
+						this.consume(":");
+					}
+					
+					
+					conditionsBlock.conditions.push(condition);
+					//conditions.push(condition);
+				}
+				else if (this.lookAhead("default"))
+				{
+					foundDefault=true;
+					if(!first)
+					{
+						if(conditionsBlock.body.length>0)
+						{
+							statement.conditions.push(conditionsBlock);
+							conditionsBlock=undefined;
+						}
+					}
+					this.consume(":");
+					first=false;
+					switchStatement.defaultCondition = {type:"DefaultCase",body:[],pos:file.characterPosition}; 
+				}
+				else if(this.lookAhead("break"))
+				{
+					if(conditionsBlock.body.length>0)
+					{
+						switchStatement.conditions.push(conditionsBlock);
+						conditionsBlock={type:"ConditionsBlock",body:[],conditions:[],pos:file.characterPosition};
+					}
+					this.consume(";");
+				}
+				else
+				{
+					if(first)
+					{
+						this.unexpected("Expecting case Statement");
+					}
+					if(!foundDefault)
+					{
+						var theStatement = this.parseStatement();
+						//console.log("Statement:[",theStatement,"]");
+						conditionsBlock.body.push(theStatement);
+					}
+					else
+					{
+						
+						var theStatement = this.parseStatement();
+						//console.log("Statement:[",theStatement,"]");
+						switchStatement.defaultCondition.body.push(theStatement);
+					}
+					
+				}
+				this.skipBlanks();
+			}
+			if(conditionsBlock)
+			{
+				switchStatement.conditions.push(conditionsBlock);
+			}
+			this.consume("}");
+			//console.log("statement:",switchStatement);
+			return switchStatement;
 		},
 		parseBody:function(){
 			var statements = [];
@@ -1046,6 +1157,21 @@ const parser = (function(){
 					statement.else = this.parseBody();
 				}
 				return statement;
+			}else if(this.lookAhead("switch")){
+				var statement = {type:"SwitchStatement",pos:position};
+				this.consume("(");
+				if(!this.identifierIncoming)
+				{
+					unexpected("identifier");
+				}
+				else
+				{
+					statement.identifier=this.readIdentifier();
+				}
+				this.consume(")");
+				statement.body=this.parseSwitchBody();
+				return statement;
+				
 			}else if (this.lookAhead("while")){
 				this.consume("(");
 				return{
@@ -1101,8 +1227,8 @@ const parser = (function(){
 			var unaryExpression = this.parseUnary();
 			//console.log("Parse Unary:",unaryExpression);
 			var expression = this.parseBinary(unaryExpression,0);
-			//console.log("Parse Binary:",expression);
 			//console.log("Expression:",expression);
+			//console.log("Parse Binary:",expression);
 			if(end)
 			{
 				this.consume(end);
@@ -1188,8 +1314,10 @@ const parser = (function(){
 				expression = {
 					type:"Literal",
 					literalType:"Number",
-					defineType:numberValue.numberType,
-					value:numberValue.value,
+					value:{
+						numberType:numberValue.numberType,
+						value:numberValue.value,
+					}
 				};
 				//console.log("Read Number:",expression);
 			}
@@ -1204,7 +1332,7 @@ const parser = (function(){
 			}
 			else
 			{
-				console.log("Read identifier Wierd State");
+				//console.log("Read identifier Wierd State");
 				return;
 			}
 			if(this.lookAhead("["))
@@ -1234,7 +1362,6 @@ const parser = (function(){
 					base:expression,
 					arguments:args
 				};
-				
 			}
 			expression.pos = position;
 			var suffixPosition= file.characterPosition;
@@ -1475,10 +1602,11 @@ const parser = (function(){
 		},
 		print:function(theExpression)
 		{
-			//console.log("Expression:",theExpression);
+			
 			for(var statement in theExpression)
 			{
-				if(theExpression[statement].type!=undefined)
+				//console.log("Expression:",theExpression[statement]);
+				if(theExpression[statement]!=undefined && theExpression[statement].type!=undefined)
 				{
 					switch(theExpression[statement].type){
 						case "FunctionDefinition":
@@ -1538,10 +1666,61 @@ const parser = (function(){
 							}
 							process.stdout.write("){\n");
 							this.tabCount++;
+							//console.log(theExpression[statement]);
 							this.print(theExpression[statement].body);
 							this.tabCount--;
 							this.printTabs();
 							process.stdout.write("}\n");
+						break;
+						case "SwitchStatement":
+							this.printTabs();
+							process.stdout.write("switch(");
+							process.stdout.write(theExpression[statement].identifier);
+							process.stdout.write("){\n");
+							this.tabCount++;
+							for(var caseStatementGroup in theExpression[statement].body.conditions)
+							{
+								for(var caseStatement in theExpression[statement].body.conditions[caseStatementGroup].conditions)
+								{
+									this.printTabs();
+									process.stdout.write("case ");
+									switch(theExpression[statement].body.conditions[caseStatementGroup].conditions[caseStatement].type)
+									{
+										case "Literal":
+											//console.log(theExpression[statement].body.conditions[caseStatementGroup]);
+											this.printLiteral(theExpression[statement].body.conditions[caseStatementGroup].conditions[caseStatement]);
+											process.stdout.write(":\n");
+											
+											
+										break;
+
+										default:
+											console.log("Unrecognized switch case literal");
+									}
+									
+									//console.log(theExpression[statement].body.conditions[caseStatementGroup].conditions[caseStatement]);
+								}
+								this.tabCount++;
+								this.print(theExpression[statement].body.conditions[caseStatementGroup].body);
+								this.tabCount--;
+								this.printTabs();
+								process.stdout.write("break;\n");
+							}
+							if(theExpression[statement].body.defaultCondition!=undefined)
+							{
+								this.printTabs();
+								process.stdout.write("default:\n");
+								
+								this.tabCount++;
+								this.print(theExpression[statement].body.defaultCondition.body);
+								this.tabCount--;
+							}
+							this.printTabs();
+							process.stdout.write("break;\n");
+							this.tabCount--;
+							this.printTabs();
+							process.stdout.write("}\n");
+							
 						break;
 						case "IfStatement":
 						//console.log(theExpression[statement]);
@@ -1584,7 +1763,9 @@ const parser = (function(){
 					this.printIdentifier(theExpression.left);
 				break;
 				case "Literal":
-					process.stdout.write(theExpression.left.value.toString());
+				//console.log(theExpression.left.value);
+					this.printLiteral(theExpression.left.value);
+					//process.stdout.write(theExpression.left.value.toString());
 				break;
 				default:
 					console.log("[printBinaryExpression]Unhandled left binary expression type:",theExpression.left.type);
@@ -1596,7 +1777,8 @@ const parser = (function(){
 					this.printIdentifier(theExpression.right);
 				break;
 				case "Literal":
-					process.stdout.write(theExpression.right.value.toString());
+					this.printLiteral(theExpression.right);
+					//process.stdout.write(theExpression.right.value.toString());
 				break;
 				default:
 					console.log("[printBinaryExpression]Unhandled right binary expression type:",theExpression.right.type);
@@ -1737,7 +1919,28 @@ const parser = (function(){
 			switch(literal.literalType)
 			{
 				case "Number":
-					process.stdout.write(literal.value.toString());
+					switch(literal.value.numberType)
+					{
+						case "base2Integer":
+							process.stdout.write("0b");
+							process.stdout.write(literal.value.value.toString(2));
+						break;
+						case "base8Integer":
+							process.stdout.write("0");
+							process.stdout.write(literal.value.value.toString(8));
+						break;
+						case "base10Integer":
+							process.stdout.write(literal.value.value.toString(10));
+						break;
+						case "":
+							process.stdout.write("0x");
+							process.stdout.write(literal.value.value.toString(16));
+						break;
+						default:
+						console.log(literal);
+							console.log("Unhandled literal number type:",literal.value.numberType);
+					}
+					//process.stdout.write(literal.value.toString());
 				break;
 				case "String":
 					this.printString(literal.value.toString());
@@ -1925,19 +2128,19 @@ const parser = (function(){
 							process.stdout.write("'"+this.returnString(expression.typedef.val)+"'\n");
 						break;
 						case "stringDefine":
-							process.stdout.write("\""+this.returnString(expression.typedef.val)+"\"\n");
+							process.stdout.write("\""+this.returnString(expression.typedef.value)+"\"\n");
 						break;
 						case "base2IntegerDefine":
-							process.stdout.write("0b"+expression.typedef.val.toString(2)+"\n");
+							process.stdout.write("0b"+expression.typedef.value.toString(2)+"\n");
 						break;
 						case "base8IntegerDefine":
-							process.stdout.write("0"+expression.typedef.val.toString(8)+"\n");
+							process.stdout.write("0"+expression.typedef.value.toString(8)+"\n");
 						break;
 						case "base10IntegerDefine":
-							process.stdout.write(expression.typedef.val.toString(10)+"\n");
+							process.stdout.write(expression.typedef.value.toString(10)+"\n");
 						break;
 						case "base16IntegerDefine":
-							process.stdout.write("0x"+expression.typedef.val.toString(16)+"\n");
+							process.stdout.write("0x"+expression.typedef.value.toString(16)+"\n");
 						break;
 						case "expressionDefine":
 							
@@ -2009,7 +2212,7 @@ const parser = (function(){
 						{
 							if(Object.keys(escapeSequences).includes(this.currentCharacter))
 							{
-								statement.typedef.val = escapeSequences[this.currentCharacter];
+								statement.typedef.value = escapeSequences[this.currentCharacter];
 								this.next();
 							}
 							else
@@ -2019,7 +2222,7 @@ const parser = (function(){
 						}
 						else
 						{
-							statement.typedef.val = this.currentCharacter;
+							statement.typedef.value = this.currentCharacter;
 						}
 						this.consume("\'");
 						this.statements.push(statement);
@@ -2033,32 +2236,32 @@ const parser = (function(){
 							val.push(this.currentCharacter);
 							this.next();
 						}
-						statement.typedef.val = val.join("");
+						statement.typedef.value = val.join("");
 						this.consume("\"");
 						this.statements.push(statement);
 					}
 					else if (this.lookAhead("0b"))
 					{
 						statement.typedef.defineType="base2IntegerDefine";
-						statement.typedef.val= this.readBinaryNumber();
+						statement.typedef.value= this.readBinaryNumber();
 						this.statements.push(statement);
 					}
 					else if (this.lookAhead("0x"))
 					{
 						statement.typedef.defineType="base16IntegerDefine";
-						statement.typedef.val= this.readHexNumber();
+						statement.typedef.value= this.readHexNumber();
 						this.statements.push(statement);
 					}
 					else if (this.lookAhead("0"))
 					{
 						statement.typedef.defineType="base8IntegerDefine";
-						statement.typedef.val= this.readOctalNumber();
+						statement.typedef.value= this.readOctalNumber();
 						this.statements.push(statement);
 					}
 					else if(this.numberIncoming())
 					{
-						var numberValue= this.readNumber();;
-						statement.typedef.defineType=numberValue.numberType;
+						var numberValue= this.readNumber();
+						statement.typedef.defineType="base10IntegerDefine";
 						statement.typedef.value=numberValue.value;
 						
 						this.statements.push(statement);
@@ -2117,7 +2320,7 @@ const { stdin, stdout } = require('node:process');
 //console.log("IsTty(stdout):",process.stdout.isTTY);
 process.stdout.setDefaultEncoding('utf-8');
 
-const statements = parser.parse("\n#include <stdio.h>\n#include \"test.h\"\n#define TEST\n#define TEST_STRING \"test\"\n#define TEST_CHAR '\\n'\n#define TEST_NUMBER_INT 1234\n\n#define TEST_NUMBER_HEX 0x12FF\n\n#define TEST_NUMBER_OCT 0123\n\n#define TEST_NUMBER_BIN 0b01010101\nstruct st_test{int a;char*b;};enum e_one{this,that,the_other};\nint main(){\n\tint index=0;\n\tif(index==0)\n\t{\n\t\tfor(int loop_index=0;loop_index<10;loop_index++){\n\t\t\tswitch(loop_index){\n\t\t\t\tcase 0:\n\t\t\t\tcase 2:\n\t\t\t\tcase 4:\n\t\t\t\tcase 6:\n\t\t\t\tcase 8:\n\t\t\t\t\tprintf(\"Hello World!\\n\");\n\t\t\t\tbreak;\n\t\t\t\tcase 1:\n\t\t\t\tcase 3:\n\t\t\t\tcase 5:\n\t\t\t\tcase 7:\n\t\t\t\t\tprintf(\"\\n\");\n\t\t\t\tbreak;\n\t\t\t\tdefault:\n\t\t\t\t\tprintf(\"Undefined\");\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t}\n\treturn 0;\n}\n","main.c");
+const statements = parser.parse("\n#include <stdio.h>\n#include \"test.h\"\n#define TEST\n#define TEST_STRING \"test\"\n#define TEST_CHAR '\\n'\n#define TEST_NUMBER_INT 1234\n\n#define TEST_NUMBER_HEX 0x12FF\n\n#define TEST_NUMBER_OCT 0123\n\n#define TEST_NUMBER_BIN 0b01010101\nstruct st_test{int a;char*b;};enum e_one{this,that,the_other};\nint main(){\n\tint index=0;\n\tif(index==0){\n\t\tfor(int loop_index=0;loop_index<10;loop_index++){\n\t\t\tswitch(loop_index){\n\t\t\t\tcase 0:\n\t\t\t\tcase 2:\n\t\t\t\tcase 4:\n\t\t\t\tcase 6:\n\t\t\t\tcase 8:\n\t\t\t\t\tprintf(\"Hello World!\\n\");\n\t\t\t\tbreak;\n\t\t\t\tcase 1:\n\t\t\t\tcase 3:\n\t\t\t\tcase 5:\n\t\t\t\tcase 7:\n\t\t\t\t\tprintf(\"\\n\");\n\t\t\t\tbreak;\n\t\t\t\tdefault:\n\t\t\t\t\tprintf(\"Undefined\");\n\t\t\t}\n\t\t}\n\t}\n\treturn 0;\n}\n","main.c");
 //const preprocessed = parser.preprocess(statements);
 //console.log("Before Print");
 parser.print(statements);

@@ -1105,7 +1105,7 @@ const parser = (function(){
 				}
 				this.skipBlanks();
 			}
-			if(conditionsBlock)
+			if(conditionsBlock.body.length>0 && conditionsBlock.conditions.length>0)
 			{
 				switchStatement.conditions.push(conditionsBlock);
 			}
@@ -1704,7 +1704,9 @@ const parser = (function(){
 								this.print(theExpression[statement].body.conditions[caseStatementGroup].body);
 								this.tabCount--;
 								this.printTabs();
+								//console.log("Group:"+caseStatementGroup);
 								process.stdout.write("break;\n");
+								
 							}
 							if(theExpression[statement].body.defaultCondition!=undefined)
 							{
@@ -1714,9 +1716,10 @@ const parser = (function(){
 								this.tabCount++;
 								this.print(theExpression[statement].body.defaultCondition.body);
 								this.tabCount--;
+								this.printTabs();
+								process.stdout.write("break;\n");
 							}
-							this.printTabs();
-							process.stdout.write("break;\n");
+							
 							this.tabCount--;
 							this.printTabs();
 							process.stdout.write("}\n");

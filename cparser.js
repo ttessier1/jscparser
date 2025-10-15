@@ -492,13 +492,10 @@ const parser = (function(){
 					}
 					else
 					{
-						console.log("Got Here1");
 						return this.statements;
 					}
 				}
 			}
-			console.log("Got Here2");
-			return this.statements;
 		},
 		isWS:function(theChar)
 		{

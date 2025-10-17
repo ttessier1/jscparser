@@ -712,7 +712,15 @@ const parser = (function(){
 			console.log("Line:",file.content.substr(index,file.characterPosition-index));
 			for(;index<file.characterPosition;index++)
 			{
-				process.stdout.write("--");
+				
+				if(file.content[index]=='\t')
+				{
+					process.stdout.write("-------");
+				}
+				else
+				{
+					process.stdout.write("-");
+				}
 			}
 			process.stdout.write("^\n");
 			//

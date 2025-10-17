@@ -14,12 +14,12 @@ function clearModuleCache(modulePath) {
 process.stdout.setDefaultEncoding('utf-8');
 
 const directoryPath = path.join(__dirname, 'test');
-
-if ( process.argv.length < 1)
+console.log("Argument Count:[",process.argv.length,"]");
+if ( process.argv.length < 2)
 {
 	console.error("Invalid Exe\n");
 }
-else if (process.argv.length === 1) {
+else if (process.argv.length === 2) {
 	
 
 	fs.readdir(directoryPath, (err, files) => {

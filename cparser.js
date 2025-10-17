@@ -491,7 +491,7 @@ const parser = (function(){
 					}else{
 						if(this.lookAhead("="))
 						{
-							def.value = parseExpression(";");
+							def.value = this.parseExpression(";");
 						}
 						else
 						{
@@ -832,6 +832,7 @@ const parser = (function(){
 				{
 					if(this.lookAhead(this.typeModifiers[index]))
 					{
+						//if(!
 						//console.log("Found Type Modifier:"+this.typeModifiers[index]);
 						file.characterPosition=_characterPosition;
 						file.lineCharacterPosition=_lineCharacterPosition;
@@ -961,7 +962,54 @@ const parser = (function(){
 					return def;
 				}
 			}
-			this.unexpected(typeNames.join(","));
+			if(def.modifier.length>0 && this.typeNames.includes(def.modifier[def.modifier.length-1]))
+			{
+				def.name=def.modifier[def.modifier.length-1];
+				if(def.modifier.length>1)
+				{
+					def.modifier.slice(0,def.modifier.length-1);
+				}
+				else
+				{
+					def.modifier=[];
+				}
+				while(this.lookAhead("*"))
+				{
+					def = {
+						type:"Pointer",	
+						target:def,
+						pos:file.characterPosition
+					};
+				}
+				if(!nameless)
+				{
+					name = this.readIdentifier();
+				}
+				
+				while(this.lookAhead("["))
+				{
+					def = {
+						type:"Pointer",
+						target:def,
+						pos:file.characterPosition
+					};
+					if(!lookAhead("]"))
+					{
+						def.length = this.parseExpression();
+						this.consume("]");
+					}
+				}
+				if(name){
+					def = {
+						type:"Definition",
+						defType:def,
+						name:name,
+						pos:position
+					}
+				}
+				return def;
+			}
+			this.unexpected(this.typeNames.join(","));
 		},
 		identifierIncoming:function()
 		{
@@ -1218,6 +1266,7 @@ const parser = (function(){
 			}else if (this.definitionIncomming())
 			{
 				var def = this.readDefinition();
+				console.log(def);
 				if(this.lookAhead("="))
 				{
 					def.value = this.parseExpression(";");
@@ -1305,9 +1354,10 @@ const parser = (function(){
 				var val = this.currentCharacter.charCodeAt(0);
 				if(this.currentCharacter == "\\")
 				{
+					this.next();
 					val = this.readEscapeSequence().charCodeAt(0);
 				}else{
-					next(true,true);
+					this.next(true,true);
 				}
 				this.consume("'");
 				expression = {
@@ -1441,16 +1491,21 @@ const parser = (function(){
 		{
 			if(this.currentCharacter=='0' &&this.nextCharacter=='b')
 			{
+				this.next();
+				this.next();
 				var numberValue=this.readBinaryNumber(keepBlanks); 
 				return { value:numberValue,"numberType":"base2Integer"};
 			}
 			else if ( this.currentCharacter=='0' && /[0-7]/.test(this.nextCharacter))
 			{
+				this.next();
 				var numberValue=this.readOctalNumber(keepBlanks);
 				return { value:numberValue,"numberType":"base8Integer"};
 			}
 			else if(this.currentCharacter =='0' && this.nextCharacter=='x')
 			{
+				this.next();
+				this.next();
 				var numberValue=this.readHexNumber(keepBlanks);
 				return { value:numberValue,"numberType":"base16Integer"};
 			}
@@ -1460,7 +1515,8 @@ const parser = (function(){
 				var _lineCharacterPosition=file.lineCharacterPosition;
 				var _characterPosition = file.characterPosition;
 				var decimalCount=0;
-				while(this.currentCharacter&&/[0-9\.]/.test(this.currentCharacter))
+				var exponentCount=0;
+				while(this.currentCharacter&&/[0-9\.e]/.test(this.currentCharacter))
 				{
 					this.next();
 					if(this.currentCharacter=='.' && decimalCount==0)
@@ -1470,6 +1526,14 @@ const parser = (function(){
 					else if(this.currentCharacter=='.' && decimalCount>0)
 					{
 						this.unexpected("Too many decimals");
+					}
+					if(this.currentCharacter=='e' && exponentCount==0)
+					{
+						exponentCount++;
+					}
+					else if(this.currentCharacter=='e' && exponentCount>0)
+					{
+						this.unexpected("Too many exponent specifiers");
 					}
 				}
 				file.characterPosition=_characterPosition;
@@ -1498,8 +1562,16 @@ const parser = (function(){
 				{
 					//TODO: distinguish double from float
 					//TODO: support scientific notation
-					var numberValue = this.read(/[0-9\.]/,"Number",/[0-9]/,keepBlanks);
-					return { value:parseFloat(numberValue),"numberType":"singleFloat"};
+					
+					var numberValue = this.read(/[0-9\.e]/,"Number",/[0-9e]/,keepBlanks);
+					var numberDef = { value:parseFloat(numberValue),"numberType":"doubleFloat"};
+					if(this.currentCharacter=='f')
+					{
+						// store as float
+						this.consume("f");
+						numberDef.numberType='singleFloat';
+					}
+					return numberDef;
 				}
 				
 			}
@@ -1766,6 +1838,22 @@ const parser = (function(){
 							this.tabCount--;
 							this.printTabs();
 							process.stdout.write("}\n");
+						break;
+						case "GlobalVariableDeclaration":
+							for(modifier in theExpression[statement].defType.modifier)
+							{
+								process.stdout.write(theExpression[statement].defType.modifier[modifier]+" ");
+							}
+							process.stdout.write(theExpression[statement].defType.name + " ");
+							process.stdout.write(theExpression[statement].name + " ");
+							if(theExpression[statement].defType.value != undefined)
+							{
+								process.stdout.write(" = "+theExpression[statement].defType.value + ";\n");
+							}
+							else
+							{
+								process.stdout.write(";\n");
+							}
 						break;
 						default:
 							console.log("[print]Unhandled statement type:[",theExpression[statement],"]");

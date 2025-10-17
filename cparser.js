@@ -701,6 +701,21 @@ const parser = (function(){
 		},
 		unexpected:function(str){
 			var _currentCharacter = JSON.stringify(this.currentCharacter||"EOF");
+			// Find the line up to the character position
+			var index=file.characterPosition;
+			
+			while(file.content[index]!='\n' && index>0)
+			{
+				index--;
+			}
+			console.log("Index:",index," position:",file.characterPosition," diff:",file.characterPosition-index);
+			console.log("Line:",file.content.substr(index,file.characterPosition-index));
+			for(;index<file.characterPosition;index++)
+			{
+				process.stdout.write("--");
+			}
+			process.stdout.write("^\n");
+			//
 			var msg = [
 				file.name,
 				":",
@@ -906,16 +921,19 @@ const parser = (function(){
 					def.name = this.typeNames[index].toString();
 					while(this.lookAhead("*"))
 					{
+						
 						def = {
 							type:"Pointer",	
 							target:def,
 							pos:file.characterPosition
 						};
+						//console.log("Pointer:",def);
 					}
 					if(!nameless)
 					{
 						name = this.readIdentifier();
 					}
+					
 					while(this.lookAhead("["))
 					{
 						def = {
@@ -936,6 +954,7 @@ const parser = (function(){
 							name:name,
 							pos:position
 						}
+						//console.log("Def:[",def,"]");
 					}
 					return def;
 				}
@@ -1042,13 +1061,11 @@ const parser = (function(){
 			{
 				args.push(this.readDefinition());
 				if(this.lookAhead(")")){
-					
-					
-					this.consume(")");
+					//this.consume(")");
 					return args;
 				}
 				this.consume(",");
-				
+				this.skipBlanks();
 			}
 			
 			this.consume(")");
@@ -1155,6 +1172,7 @@ const parser = (function(){
 		},
 		parseBody:function(){
 			var statements = [];
+			this.skipBlanks();
 			this.consume("{");
 			while(!(this.currentCharacter=="}"||this.currentCharacter==undefined))
 			{
@@ -1667,16 +1685,16 @@ const parser = (function(){
 			
 			for(var statement in theExpression)
 			{
-				
+				this.printTabs();
 				if(theExpression[statement]!=undefined && theExpression[statement].type!=undefined)
 				{
 					switch(theExpression[statement].type){
 						case "FunctionDefinition":
 							this.printFunctionDefinition(theExpression[statement]);
 						break;
-						case "CallStatement":
-							this.printCallStatement(theExpression[statement]);
-						break;
+						//case "CallStatement":
+						//	this.printCallStatement(theExpression[statement]);
+						//break;
 						case "ExpressionStatement":
 							this.printExpressionStatement(theExpression[statement]);
 						break;
@@ -1684,7 +1702,7 @@ const parser = (function(){
 							this.printReturnStatement(theExpression[statement]);
 						break;
 						case "VariableDeclaration":
-							this.printVariableDeclaration(theExpression[statement],true,true);
+							this.printVariableDeclaration(theExpression[statement],false,true);
 						break;
 						case "PreProcessorExpression":
 							this.printPreprocessorExpression(theExpression[statement]);
@@ -1735,7 +1753,6 @@ const parser = (function(){
 							process.stdout.write("}\n");
 						break;
 						case "SwitchStatement":
-							this.printTabs();
 							process.stdout.write("switch(");
 							process.stdout.write(theExpression[statement].identifier);
 							process.stdout.write("){\n");
@@ -1789,7 +1806,6 @@ const parser = (function(){
 						break;
 						case "IfStatement":
 						
-							this.printTabs();
 							process.stdout.write("if(");
 							switch(theExpression[statement].condition.type)
 							{
@@ -1829,6 +1845,38 @@ const parser = (function(){
 							{
 								process.stdout.write(";\n");
 							}
+						break;
+						case "WhileStatement":
+							process.stdout.write("while(");
+							switch(theExpression[statement].condition.type){
+								case "BinaryExpression":
+									switch(theExpression[statement].condition.left.type){
+										case "Identifier":
+											this.printIdentifier(theExpression[statement].condition.left);
+										break;
+										default:
+									console.log("Unhandled while statement left condition type[",theExpression[statement].condition.left.type,"]");
+									}
+									process.stdout.write(theExpression[statement].condition.operator);
+									switch(theExpression[statement].condition.right.type){
+										case "Literal":
+											this.printLiteral(theExpression[statement].condition.right);
+										break;
+										default:
+											console.log("Unhandled while statement right condition type:[",theExpression[statement].condition.left.type,"]");
+									}
+								break;
+								default:
+									console.log("Unhandled While Statement condition type:[",theExpression[statement].condition.type,"]");
+							}
+							process.stdout.write("){\n");
+							this.tabCount++;
+							this.print(theExpression[statement].body);
+							this.tabCount--;
+							this.printTabs();
+							process.stdout.write("}\n");
+							
+						
 						break;
 						default:
 							console.log("[print]Unhandled statement type:[",theExpression[statement],"]");
@@ -1874,6 +1922,7 @@ const parser = (function(){
 				break;
 			}
 			process.stdout.write(theExpression.operator);
+			process.stdout.write(";\n");
 		},
 		printIdentifier(theIdentifier){
 			process.stdout.write(theIdentifier.value.toString());
@@ -1889,17 +1938,52 @@ const parser = (function(){
 			buffer = Buffer.from(functionDefinition.name, 'utf8');
 			process.stdout.write(buffer.toString());
 			process.stdout.write(openingParenthesisBuffer);
+			var argumentString = "";
+			var argumentStrings = [];
 			for(var argument in functionDefinition.arguments)
 			{
-				switch(functionDefinition.arguments[argument].type)
+				switch(functionDefinition.arguments[argument].type.trim())
 				{
 					case "Literal":
-						this.printLiteral(functionDefinition.arguments[argument])
+						this.printLiteral(functionDefinition.arguments[argument]);
+					break;
+					case "Definition":
+						switch(functionDefinition.arguments[argument].defType.type.trim())
+						{
+							case "Type":
+								//console.log(functionDefinition.arguments[argument].defType);
+								
+								for(var modifier in functionDefinition.arguments[argument].defType.modifier)
+								{
+									argumentString += functionDefinition.arguments[argument].defType.modifier[modifier] + " ";
+								}
+								argumentString += functionDefinition.arguments[argument].defType.name + " ";
+								argumentString += functionDefinition.arguments[argument].name;
+								argumentStrings.push(argumentString);
+								argumentString = "";
+							break;
+							case "Pointer":
+								for(var modifier in functionDefinition.arguments[argument].defType.target.modifier)
+								{
+									argumentString += functionDefinition.arguments[argument].defType.target.modifier[modifier] + " ";
+								}
+								//console.log("Pointer Target[",functionDefinition.arguments[argument].defType.target,"]");
+								argumentString += functionDefinition.arguments[argument].defType.target.target.name;
+								argumentString += this.printPointer(functionDefinition.arguments[argument],true);
+								argumentString += functionDefinition.arguments[argument].name;
+								argumentStrings.push(argumentString);
+								argumentString = "";
+							break;
+							default:
+								console.log("Unhandled Definition Type:[",functionDefinition.arguments[argument].defType.type.trim(),"]");
+						}
 					break;
 					default:
-						console.log("Unhandled argument type :",functionDefinition.arguments[argument]);
+						console.log("Unhandled argument type :[",functionDefinition.arguments[argument].type.trim(),"]");
 				}
 			}
+			
+			process.stdout.write(argumentStrings.join(","));
 			process.stdout.write(closingParenthesisBuffer);
 			process.stdout.write("{\n");
 			this.tabCount++;
@@ -1930,12 +2014,9 @@ const parser = (function(){
 								process.stdout.write(structDefinition.member[structItem].defType.name.toString() + " ");
 							break;
 							case "Pointer":
-								for(var modifier in structDefinition.member[structItem].defType.target.modifier)
-								{
-									process.stdout.write(structDefinition.member[structItem].defType.target.modifier[modifier].toString()+" ");
-								}
-								process.stdout.write(structDefinition.member[structItem].defType.target.name.toString() + " * ");
-							break;
+								process.stdout.write(structDefinition.member[structItem].name+"");
+								process.stdout.write(this.printPointer(structDefinition.member[structItem].defType.target,true));
+							break;	
 							default:
 								console.log("Unhandled struct member type:",structDefinition.member[structItem].type);
 						}
@@ -1947,6 +2028,73 @@ const parser = (function(){
 			}
 			this.tabCount--;
 			process.stdout.write("};\n\n");
+		},
+		printPointer:function(pointerDefinition,returnString)
+		{
+			//console.log("PrintPointer:[",pointerDefinition,"]");
+			var stringContent="";
+			if(pointerDefinition.defType!=undefined)
+			{
+				switch(pointerDefinition.defType.type)
+				{
+					case "Type":
+						if(pointerDefinition.target.modifier!=undefined)
+						{
+							for(var modifier in pointerDefinition.target.modifier)
+							{
+								stringContent += pointerDefinition.target.modifier[modifier]+" ";
+							}
+						}
+						stringContent += "*";
+					break;
+					case "Pointer":
+						if(pointerDefinition.defType.target.modifier!=undefined)
+						{
+							for(var modifier in pointerDefinition.defType.target.modifier)
+							{
+								stringContent += pointerDefinition.defType.target.modifier[modifier]+" ";
+							}
+						}
+						stringContent += "*";
+						stringContent += this.printPointer(pointerDefinition.defType.target,returnString);
+					break;
+				}
+			}else if(pointerDefinition.target!= undefined)
+			{
+				switch(pointerDefinition.target.type)
+				{
+					case "Type":
+						if(pointerDefinition.target.modifier!=undefined)
+						{
+							for(var modifier in pointerDefinition.target.modifier)
+							{
+								stringContent += pointerDefinition.target.modifier[modifier]+" ";
+							}
+						}
+						stringContent += "*";
+					break;
+					case "Pointer":
+						console.log("Printing Pointer SubType:[",pointerDefinition.defType.target,"]");
+						if(pointerDefinition.defType.target.modifier!=undefined)
+						{
+							for(var modifier in pointerDefinition.defType.target.modifier)
+							{
+								stringContent += pointerDefinition.defType.target.modifier[modifier]+" ";
+							}
+						}
+						stringContent += "*";
+						stringContent += this.printPointer(pointerDefinition.defType.target,returnString);
+					break;
+				}
+			}
+			if(returnString){
+				return stringContent;
+			}
+			else
+			{
+				process.stdout.write(stringContent);
+				return stringContent;
+			}
 		},
 		printEnumDefinition(enumDefinition)
 		{
@@ -1986,6 +2134,18 @@ const parser = (function(){
 				case "CallExpression":
 					this.printCallExpression(expressionStatment.expression.base,expressionStatment.expression.arguments);
 				break;
+				case "SuffixExpression":
+					switch(expressionStatment.expression.value.type)
+					{
+						case "Identifier":
+
+							this.printIdentifier(expressionStatment.expression.value);
+							process.stdout.write(expressionStatment.expression.operator+";\n");
+						break;
+						default:
+							console.log("Unhandled expression value type:[",expressionStatment.expression.value.type,"]");
+					}
+					break;
 				default:
 					console.log("Unhandled expression type:",expressionStatment.expression.type);
 					
@@ -2075,7 +2235,7 @@ const parser = (function(){
 		},
 		printCallExpression(base,args)
 		{
-			this.printTabs();
+			//this.printTabs();
 			switch(base.type){
 				case "Identifier":
 					process.stdout.write(base.value.toString());
@@ -2090,6 +2250,26 @@ const parser = (function(){
 				{
 					case "Literal":
 						this.printLiteral(args[arg])
+					break;
+					case "Definition":
+						switch(args[arg].defType.type)
+						{
+							case "Type":
+								for(var modifier in args[arg].defType.modifier)
+								{
+									process.stdout.write(args[arg].defType.modifier[modifier] + " ");
+								}
+								process.stdout.write(args[arg].defType.name + " ");
+								process.stdout.write("");
+							break;
+							case "Pointer":
+							console.log("Print Pointer");
+								this.printPointer(args[arg]);
+								//console.log("Pointer:",args[arg].defType);
+							break;
+							default:
+								console.log("Unhandled argument deftype type :",args[arg].defType.type);
+						}
 					break;
 					default:
 						console.log("Unhandled argument type :",args[arg].type);

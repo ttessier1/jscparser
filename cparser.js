@@ -326,6 +326,29 @@ const parser = (function(){
 		defines:[],
 		EOF:false,
 		types:[],
+		initialize:function()
+		{
+			this.types=[];
+			this.applyTypes();
+			this.statements=[];
+			this.keywords=[];
+			this.typeNames=[];
+			this.typeModifiers=[];
+			this.operations=[];
+			this.sortedOperations=[];
+			this.tabCount=0;
+			this.defineConstants={};
+			this.defines=[];
+			this.EOF = false;
+			this.currentCharacter = undefined;
+			this.nextCharacter = undefined ;
+			this.lastCharacter=undefined;
+			this.sortKeywords();
+			this.sortTypes();
+			this.sortTypeModifiers();
+			this.sortOperations();
+			this.statements = [];
+		},
 		sortKeywords:function()
 		{
 			//console.log("keywords:",keywords);
@@ -375,42 +398,11 @@ const parser = (function(){
 			this.sortedOperations = this.sortedOperations.filter(element=>element != undefined);
 			//console.log("sorted operations:",this.sortedOperations);
 		},
-		parseTest:function(text,name,calls){
-			file.content = text;
-			file.name = name;
-			for(var index=0;index<calls;index++){
-				this.next();
-			}
-			console.info("Last Character:",this.lastCharacter,this.lastCharacter.charCodeAt(0));
-			console.info("Current Character:",this.currentCharacter,this.currentCharacter.charCodeAt(0));
-			console.info("Next Character:",this.nextCharacter,this.nextCharacter.charCodeAt(0));
-			return "";
-		},
 		parse:function(text,name)
 		{
-			this.types=[];
-			this.applyTypes();
-			this.statements=[];
-			this.keywords=[];
-			this.typeNames=[];
-			this.typeModifiers=[];
-			this.operations=[];
-			this.sortedOperations=[];
-			this.tabCount=0;
-			this.defineConstants={};
-			this.defines=[];
-			this.EOF = false;
 			file.content = text;
 			file.name = name;
 			file.characterPosition=0;
-			this.currentCharacter = undefined;
-			this.nextCharacter = undefined ;
-			this.lastCharacter=undefined;
-			this.sortKeywords();
-			this.sortTypes();
-			this.sortTypeModifiers();
-			this.sortOperations();
-			this.statements = [];
 			this.currentCharacter = file.content[file.characterPosition];
 			while(this.currentCharacter)
 			{
@@ -2346,11 +2338,7 @@ const parser = (function(){
 })();
 
 
+parser.initialize();
 
 
 module.exports = parser;
-//const statements = parser.parse("\n#include <stdio.h>\n#include \"test.h\"\n#define TEST\n#define TEST_STRING \"test\"\n#define TEST_CHAR '\\n'\n#define TEST_NUMBER_INT 1234\n\n#define TEST_NUMBER_HEX 0x12FF\n\n#define TEST_NUMBER_OCT 0123\n\n#define TEST_NUMBER_BIN 0b01010101\nstruct st_test{int a;char*b;};enum e_one{this,that,the_other};\nint main(){\n\tint index=0;\n\tif(index==0){\n\t\tfor(int loop_index=0;loop_index<10;loop_index++){\n\t\t\tswitch(loop_index){\n\t\t\t\tcase 0:\n\t\t\t\tcase 2:\n\t\t\t\tcase 4:\n\t\t\t\tcase 6:\n\t\t\t\tcase 8:\n\t\t\t\t\tprintf(\"Hello World!\\n\");\n\t\t\t\tbreak;\n\t\t\t\tcase 1:\n\t\t\t\tcase 3:\n\t\t\t\tcase 5:\n\t\t\t\tcase 7:\n\t\t\t\t\tprintf(\"\\n\");\n\t\t\t\tbreak;\n\t\t\t\tdefault:\n\t\t\t\t\tprintf(\"Undefined\");\n\t\t\t}\n\t\t}\n\t}\n\treturn 0;\n}\n","main.c");
-//const preprocessed = parser.preprocess(statements);
-//console.log("Before Print");
-//parser.print(statements);
-//console.log("After Print");

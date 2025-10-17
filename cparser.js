@@ -1886,6 +1886,40 @@ const parser = (function(){
 							
 						
 						break;
+						case "DoWhileStatement":
+							process.stdout.write("do{\n");
+							
+							this.tabCount++;
+							this.print(theExpression[statement].body);
+							this.tabCount--;
+							this.printTabs();
+							process.stdout.write("}while(");
+							switch(theExpression[statement].condition.type){
+								case "BinaryExpression":
+									switch(theExpression[statement].condition.left.type){
+										case "Identifier":
+											this.printIdentifier(theExpression[statement].condition.left);
+										break;
+										default:
+									console.log("Unhandled while statement left condition type[",theExpression[statement].condition.left.type,"]");
+									}
+									process.stdout.write(theExpression[statement].condition.operator);
+									switch(theExpression[statement].condition.right.type){
+										case "Literal":
+											this.printLiteral(theExpression[statement].condition.right);
+										break;
+										default:
+											console.log("Unhandled while statement right condition type:[",theExpression[statement].condition.left.type,"]");
+									}
+								break;
+								default:
+									console.log("Unhandled While Statement condition type:[",theExpression[statement].condition.type,"]");
+							}
+							process.stdout.write(");\n");
+							
+							
+						
+						break;
 						default:
 							console.log("[print]Unhandled statement type:[",theExpression[statement],"]");
 					}

@@ -351,21 +351,21 @@ const parser = (function(){
 		},
 		sortKeywords:function()
 		{
-			//console.log("keywords:",keywords);
+			
 			this.keywords = keywords.sort(function(a,b){
 				return b.length-a.length;
 			});
 			this.keywords = this.keywords.filter(element => element !== undefined);
-			//console.log("sorted keywords:",this.keywords);
+			
 		},
 		sortTypes:function()
 		{
-			//console.log("types:",types);
+			
 			this.typeNames = types.sort(function(a,b){
 				return b.length-a.length;
 			});
 			this.typeNames = this.typeNames.filter(element => element !== undefined);
-			//console.log("sorted types:",this.typeNames);
+			
 		},
 		applyTypes:function()
 		{
@@ -379,24 +379,24 @@ const parser = (function(){
 			
 		},
 		sortTypeModifiers:function(){
-			//console.log("modifiers:",typeModifiers);
+			
 			this.typeModifiers = typeModifiers.sort(function(a,b){
 				return b.length-a.length;
 			});
 			this.typeModifiers = this.typeModifiers.filter(element => element !== undefined);
-			//console.log("sorted modifiers:",this.typeModifiers);
+			
 		},
 		sortOperations:function()
 		{
 			
 			this.operations = operations;
 			this.sortedOperations = Object.keys(operations);
-			//console.log("operations:",this.sortedOperations);
+			
 			this.sortedOperations = this.sortedOperations.sort(function(a,b){
 				return b.length-a.length;
 			});
 			this.sortedOperations = this.sortedOperations.filter(element=>element != undefined);
-			//console.log("sorted operations:",this.sortedOperations);
+			
 		},
 		parse:function(text,name)
 		{
@@ -410,11 +410,11 @@ const parser = (function(){
 				
 				this.skipBlanks();
 				if(this.lookAhead("#")){
-					//console.log("Doing PreProcessor Macro");
+					
 					this.ProcessPreProcessSymbols();
 				}
 				else if(this.lookAhead("struct")){
-					//console.log("Found Struct");
+					
 					var statement = {type:"StructDefinition",member:[],pos:position};
 					statement.name = this.readIdentifier();
 					this.consume("{");
@@ -470,19 +470,19 @@ const parser = (function(){
 					this.sortTypes();
 					this.statements.push(statement);
 				}else if(this.definitionIncomming()){
-					//console.log("Found Definition");
+					
 					var def = this.readDefinition();
 					
 					def.pos = position;
 					if(this.lookAhead("(")){
 						def.arguments = this.parseArgumentDefinitions();
-						//console.log("Arguments:",def.arguments);
+						
 						if(this.lookAhead(";"))
 						{
-							//console.log("Function Declaration");
+							
 							def.type = "FunctionDeclaration";
 						}else{
-							//console.log("Function Body");
+							
 							this.skipBlanks();
 							def.type = "FunctionDefinition";
 							def.body = this.parseBody();
@@ -500,7 +500,7 @@ const parser = (function(){
 						def.type = "GlobalVariableDeclaration";
 						this.statements.push(def);
 					}
-					//console.log("Def:",def);
+					
 				}else{
 					if(!this.EOF && this.currentCharacter != undefined)
 					{
@@ -529,7 +529,7 @@ const parser = (function(){
 			while(/[\s\n]/.test(this.currentCharacter))
 			{
 				this.next();
-				//console.log("[Skip Blanks]Current Character:[",this.currentCharacter,"]");
+				
 				
 			}
 			
@@ -561,7 +561,7 @@ const parser = (function(){
 			}
 			if(this.currentCharacter && this.currentCharacter== '/' && this.nextCharacter=='/')
 			{
-				while(currentCharacter!='\n')
+				while(this.currentCharacter!='\n')
 				{
 					this.gotoNextCharacter();
 				}
@@ -636,8 +636,6 @@ const parser = (function(){
 			{
 				if(file.characterPosition<file.content.length)
 				{
-					//file.characterPosition++;
-					//currentCharacter = file.content[file.characterPosition];
 					if(file.line==-1)
 					{ // make sure to start on line 1
 						file.line++;
@@ -686,27 +684,8 @@ const parser = (function(){
 						this.nextCharacter = undefined;
 					}
 					var skipped;
-					//console.log("Character Set:[",this.lastCharacter,",",this.currentCharacter,",",this.NextCharacter,"] [",file.characterPosition,",",file.lineCharacterPosition,",",file.content.length,"]");
 					do{
 						skipped = this.skipComments(includeComments)||this.skipSpaces(includeSpaces);
-						/*if(!includeSpaces && (
-						file.characterPosition==0 ||
-						this.lastCharacter =='\n') && this.currentCharacter=='#'
-						)
-						{
-							this.consume('#'); // preprocessor Symbol
-							// this could be a include statement
-							// this could be a define statement
-							// this could be a 
-							var line = position.line = readNumber(true)-1;
-							this.consume(" ");
-							position.file = this.readString(true);
-							while(this.currentCharacter!='\n')
-							{
-								this.next();
-							}
-							skipped = true;
-						}*/
 					}while(skipped);	
 					
 				}
@@ -752,7 +731,7 @@ const parser = (function(){
 			var _characterPosition = file.characterPosition;
 			if(str && str.length!=0)
 			{
-				//console.log(`string ${str} not empty in lookahead ${_characterPosition}`);
+				
 				for(var index=0;index<str.length;index++)
 				{
 					if(this.currentCharacter != str[index])
@@ -774,13 +753,13 @@ const parser = (function(){
 						{
 							this.nextCharacter=undefined;
 						}
-						//console.log(`${this.currentCharacter} != ${str[index]}`);
+						
 						return false;
 					}
-					//console.log(`${this.currentCharacter} == ${str[index]}`);
+					
 					this.next(true);
 				}
-				//console.log("At End Of WordTest");
+				
 				if(/^[_a-zA-Z][_a-zA-Z0-9]*$/.test(str) && /[_a-zA-Z]/.test(this.currentCharacter))
 				{
 					file.characterPosition=_characterPosition;
@@ -800,40 +779,40 @@ const parser = (function(){
 					{
 						this.nextCharacter=undefined;
 					}
-					//console.log(`/^[_a-zA-Z][_a-zA-Z0-9]*$/ ${str} && /[_a-zA-Z]/ ${this.currentCharacter}`);
+					
 					return false;
 				}
-				//console.log("At End Of identifier Test");
+				
 				if(!keepBlanks)
 				{
-					//console.log("Skip Blanks");
+					
 					this.skipBlanks();
-					//console.log("At End Of Skip Blanks Test");
+					
 				}
-				//console.log("LookAhead:",str);
+				
 				return true;
 			}
 			else
 			{
 				this.unexpected("NULL or empty for lookahead");
 			}
-			//console.log("Wierd Spot");
+			
 		},
 		definitionIncomming:function(){
-			//console.log("Definition Incoming");
+			
 			var _line=file.line;
 			var _lineCharacterPosition=file.lineCharacterPosition;
 			var _characterPosition = file.characterPosition;
 			
 			for(var index=0;index<this.typeModifiers.length;index++)
 			{
-				//console.log("Modifier:"+this.typeModifiers[index]);
+				
 				if(this.typeModifiers[index])
 				{
 					if(this.lookAhead(this.typeModifiers[index]))
 					{
 						//if(!
-						//console.log("Found Type Modifier:"+this.typeModifiers[index]);
+						
 						file.characterPosition=_characterPosition;
 						file.lineCharacterPosition=_lineCharacterPosition;
 						file.line = _line;
@@ -851,7 +830,7 @@ const parser = (function(){
 						{
 							this.nextCharacter=undefined;
 						}
-						//console.log("Found");
+						
 						return true;
 					}
 				}else
@@ -859,7 +838,7 @@ const parser = (function(){
 					console.error("ERROR: this.typeModifiers["+index+"] is NULL");
 				}
 			}
-			//console.log("End of Modifiers");
+			
 			for(var index=0;index<this.typeNames.length;index++)
 			{
 				if(this.typeNames[index])
@@ -867,7 +846,7 @@ const parser = (function(){
 					
 					if(this.lookAhead(this.typeNames[index]))
 					{
-						//console.log("Found Type:"+this.typeNames[index]);
+						
 						file.characterPosition=_characterPosition;
 						file.lineCharacterPosition=_lineCharacterPosition;
 						file.line = _line;
@@ -889,7 +868,7 @@ const parser = (function(){
 					}
 					else
 					{
-						//console.log("Not Found:"+this.typeNames[index]+" Current Character:"+this.currentCharacter);
+						
 					}
 				}
 				else
@@ -897,7 +876,7 @@ const parser = (function(){
 					console.error("ERROR: this.typeNames["+index+"] is NULL");
 				}
 			}
-			//console.log("End of Types");
+			
 			return false;
 		},
 		readDefinition:function(nameless)
@@ -1013,7 +992,7 @@ const parser = (function(){
 		},
 		identifierIncoming:function()
 		{
-			//console.log("Identifier Incoming:[",this.currentCharacter,"]");
+			
 			if(this.currentCharacter && /[A-Za-z_]/.test(this.currentCharacter))
 			{
 				
@@ -1054,26 +1033,26 @@ const parser = (function(){
 			{
 				this.skipBlanks();
 			}
-			//console.log("Read:[",val.join(""),"]");
+			
 			return val.join("");
 		},
 		parseArgumentDefinitions:function()
 		{
-			//console.log("parseArgumentDefinitions");
+			
 			var args = [];
 			while(this.definitionIncomming())
 			{
 				args.push(this.readDefinition());
 				if(this.lookAhead(")")){
-					//console.log("Arguments:",args);
-					//console.log("Found Early )");
+					
+					
 					this.consume(")");
 					return args;
 				}
 				this.consume(",");
 				
 			}
-			//console.log("Found )");
+			
 			this.consume(")");
 			return args;
 		},
@@ -1157,14 +1136,14 @@ const parser = (function(){
 					if(!foundDefault)
 					{
 						var theStatement = this.parseStatement();
-						//console.log("Statement:[",theStatement,"]");
+						
 						conditionsBlock.body.push(theStatement);
 					}
 					else
 					{
 						
 						var theStatement = this.parseStatement();
-						//console.log("Statement:[",theStatement,"]");
+						
 						switchStatement.defaultCondition.body.push(theStatement);
 					}
 					
@@ -1176,7 +1155,7 @@ const parser = (function(){
 				switchStatement.conditions.push(conditionsBlock);
 			}
 			this.consume("}");
-			//console.log("statement:",switchStatement);
+			
 			return switchStatement;
 		},
 		parseBody:function(){
@@ -1185,20 +1164,20 @@ const parser = (function(){
 			while(!(this.currentCharacter=="}"||this.currentCharacter==undefined))
 			{
 				this.skipBlanks();
-				//console.log("Parsing Statement");
+				
 				var position = file.characterPosition;
 				var statement = this.parseStatement();
 				statements.push(statement);
-				//console.log("Current Character:[",this.currentCharacter,"]");
+				
 				this.skipBlanks();
-				//console.log("Current Character:"+this.currentCharacter);
+				
 			}
-		//console.log("this.currentCharacter:[",this.currentCharacter,"]");
+		
 			//if(this.currentCharacter=="}")
 			//{
 				this.consume("}");
 			//}
-			//console.log("Statements:",statements);
+			
 			return statements;
 		},
 		parseStatement:function(){
@@ -1212,7 +1191,7 @@ const parser = (function(){
 					
 				};
 			}else if (this.lookAhead("if")){
-				//console.log("Parse If");
+				
 				this.consume("(");
 				var statement = {type:"IfStatement",pos:position};
 				statement.condition = this.parseExpression(")");
@@ -1266,7 +1245,6 @@ const parser = (function(){
 			}else if (this.definitionIncomming())
 			{
 				var def = this.readDefinition();
-				console.log(def);
 				if(this.lookAhead("="))
 				{
 					def.value = this.parseExpression(";");
@@ -1292,10 +1270,10 @@ const parser = (function(){
 		parseExpression:function(end)
 		{
 			var unaryExpression = this.parseUnary();
-			//console.log("Parse Unary:",unaryExpression);
+			
 			var expression = this.parseBinary(unaryExpression,0);
-			//console.log("Expression:",expression);
-			//console.log("Parse Binary:",expression);
+			
+			
 			if(end)
 			{
 				this.consume(end);
@@ -1307,7 +1285,7 @@ const parser = (function(){
 			var position = file.characterPosition;
 			for(var prefixedOperation in prefixedOps)
 			{
-				//console.log("Prefixed Operation:",prefixedOperation);
+				
 				if(this.lookAhead(prefixedOperation)){
 					return {
 						type:"prefixedOperation",
@@ -1331,7 +1309,7 @@ const parser = (function(){
 				{
 					expression = this.parseExpression(")");
 				}
-				//console.log("Read Cast:",expression);
+				
 			}else if ( this.lookAhead("{")){
 				var entries = [];
 				while(this.currentCharacter)
@@ -1347,7 +1325,7 @@ const parser = (function(){
 					type:"Literal",
 					value:entries,
 				};
-				//console.log("Read Body:",expression);
+				
 			}
 			else if (this.lookAhead("'"))
 			{
@@ -1362,10 +1340,11 @@ const parser = (function(){
 				this.consume("'");
 				expression = {
 					type:"Literal",
+					literalType:"Char",
 					source:"CharCode",
 					value:val
 				};
-				//console.log("Read Character Literal:",expression);
+				
 			}
 			else if ( this.stringIncoming())
 			{
@@ -1374,7 +1353,7 @@ const parser = (function(){
 					literalType:"String",
 					value:this.readString()
 				};
-				//console.log("Read String:",expression);
+				
 			}
 			else if ( this.numberIncoming())
 			{
@@ -1387,7 +1366,7 @@ const parser = (function(){
 						value:numberValue.value,
 					}
 				};
-				//console.log("Read Number:",expression);
+				
 			}
 			else if(this.identifierIncoming())
 			{
@@ -1396,11 +1375,11 @@ const parser = (function(){
 					type:"Identifier",
 					value:val
 				};
-				//console.log("Read Identifier:[",expression,"]");
+				
 			}
 			else
 			{
-				//console.log("Read identifier Wierd State");
+				
 				return;
 			}
 			if(this.lookAhead("["))
@@ -1445,7 +1424,7 @@ const parser = (function(){
 					};
 				}
 			}
-			//console.log("Unary Expression:[",expression,"]");
+			
 			return expression;
 		},
 		readEscapeSequence:function()
@@ -1477,7 +1456,7 @@ const parser = (function(){
 		},
 		numberIncoming:function()
 		{
-			//console.log("Number Incoming:[",this.currentCharacter,"]");
+			
 			if(this.currentCharacter != undefined && /[0-9]/.test(this.currentCharacter))
 			{
 				return true;
@@ -1518,14 +1497,18 @@ const parser = (function(){
 				var exponentCount=0;
 				while(this.currentCharacter&&/[0-9\.e]/.test(this.currentCharacter))
 				{
-					this.next();
-					if(this.currentCharacter=='.' && decimalCount==0)
+					
+					if(this.currentCharacter=='.' && decimalCount==0 && exponentCount==0)
 					{
 						decimalCount++;
 					}
-					else if(this.currentCharacter=='.' && decimalCount>0)
+					else if(this.currentCharacter=='.' && decimalCount>0 && exponentCount==0)
 					{
 						this.unexpected("Too many decimals");
+					}
+					else if(this.currentCharacter=='.' && exponentCount>0)
+					{
+						this.unexpected("unexpected Number");
 					}
 					if(this.currentCharacter=='e' && exponentCount==0)
 					{
@@ -1535,6 +1518,7 @@ const parser = (function(){
 					{
 						this.unexpected("Too many exponent specifiers");
 					}
+					this.next();
 				}
 				file.characterPosition=_characterPosition;
 				file.lineCharacterPosition=_lineCharacterPosition;
@@ -1560,8 +1544,6 @@ const parser = (function(){
 				}
 				else
 				{
-					//TODO: distinguish double from float
-					//TODO: support scientific notation
 					
 					var numberValue = this.read(/[0-9\.e]/,"Number",/[0-9e]/,keepBlanks);
 					var numberDef = { value:parseFloat(numberValue),"numberType":"doubleFloat"};
@@ -1602,7 +1584,7 @@ const parser = (function(){
 		},
 		readString:function(keepBlanks)
 		{
-			//console.log("Read String");
+			
 			var val = [];
 			var stringCharacterCount=0;
 			this.next(true,true);
@@ -1627,19 +1609,19 @@ const parser = (function(){
 			{
 				this.unexpected("\"");
 			}
-			//console.log("Read String:[",val.join(""),"]");
+			
 			return val.join("");
 		},
 		peekBinaryOperation:function(){
-			//console.log("peekBinaryOperation");
+			
 
 			var _line=file.line;
 			var _lineCharacterPosition=file.lineCharacterPosition;
 			var _characterPosition = file.characterPosition;
-			//console.log("Sorted Operations:",this.sortedOperations);
+			
 			for( var index = 0 ; index < this.sortedOperations.length ; index++ )
 			{
-				//console.log("Searching For LookAhead:",this.sortedOperations[index]," for: ",this.currentCharacter," ",this.nextCharacter);
+				
 				if(this.lookAhead(this.sortedOperations[index])){
 					file.characterPosition=_characterPosition;
 					file.lineCharacterPosition=_lineCharacterPosition;
@@ -1658,7 +1640,7 @@ const parser = (function(){
 					{
 						this.nextCharacter=undefined;
 					}
-					//console.log("Found:"+this.sortedOperations[index]);
+					
 					return this.sortedOperations[index];
 				}
 			}
@@ -1668,7 +1650,7 @@ const parser = (function(){
 			var lookAhead = this.peekBinaryOperation();
 			while(lookAhead && this.operations[lookAhead]>= minPrec)
 			{
-				//console.log("LookAhead:",lookAhead);
+				
 				var operation = lookAhead;
 				var position = file.characterPosition;
 				this.consume (operation);
@@ -1695,7 +1677,7 @@ const parser = (function(){
 			
 			for(var statement in theExpression)
 			{
-				//console.log("Expression:",theExpression[statement]);
+				
 				if(theExpression[statement]!=undefined && theExpression[statement].type!=undefined)
 				{
 					switch(theExpression[statement].type){
@@ -1756,7 +1738,7 @@ const parser = (function(){
 							}
 							process.stdout.write("){\n");
 							this.tabCount++;
-							//console.log(theExpression[statement]);
+							
 							this.print(theExpression[statement].body);
 							this.tabCount--;
 							this.printTabs();
@@ -1777,7 +1759,7 @@ const parser = (function(){
 									switch(theExpression[statement].body.conditions[caseStatementGroup].conditions[caseStatement].type)
 									{
 										case "Literal":
-											//console.log(theExpression[statement].body.conditions[caseStatementGroup]);
+											
 											this.printLiteral(theExpression[statement].body.conditions[caseStatementGroup].conditions[caseStatement]);
 											process.stdout.write(":\n");
 											
@@ -1788,13 +1770,13 @@ const parser = (function(){
 											console.log("Unrecognized switch case literal");
 									}
 									
-									//console.log(theExpression[statement].body.conditions[caseStatementGroup].conditions[caseStatement]);
+									
 								}
 								this.tabCount++;
 								this.print(theExpression[statement].body.conditions[caseStatementGroup].body);
 								this.tabCount--;
 								this.printTabs();
-								//console.log("Group:"+caseStatementGroup);
+								
 								process.stdout.write("break;\n");
 								
 							}
@@ -1816,7 +1798,7 @@ const parser = (function(){
 							
 						break;
 						case "IfStatement":
-						//console.log(theExpression[statement]);
+						
 							this.printTabs();
 							process.stdout.write("if(");
 							switch(theExpression[statement].condition.type)
@@ -1840,15 +1822,18 @@ const parser = (function(){
 							process.stdout.write("}\n");
 						break;
 						case "GlobalVariableDeclaration":
+						
 							for(modifier in theExpression[statement].defType.modifier)
 							{
 								process.stdout.write(theExpression[statement].defType.modifier[modifier]+" ");
 							}
 							process.stdout.write(theExpression[statement].defType.name + " ");
 							process.stdout.write(theExpression[statement].name + " ");
-							if(theExpression[statement].defType.value != undefined)
+							if(theExpression[statement].value != undefined)
 							{
-								process.stdout.write(" = "+theExpression[statement].defType.value + ";\n");
+								process.stdout.write(" = ");
+								this.printLiteral(theExpression[statement].value);
+								process.stdout.write(";\n");
 							}
 							else
 							{
@@ -1872,7 +1857,7 @@ const parser = (function(){
 					this.printIdentifier(theExpression.left);
 				break;
 				case "Literal":
-				//console.log(theExpression.left.value);
+				
 					this.printLiteral(theExpression.left.value);
 					//process.stdout.write(theExpression.left.value.toString());
 				break;
@@ -1907,10 +1892,6 @@ const parser = (function(){
 		},
 		printFunctionDefinition:function(functionDefinition)
 		{
-			for ( var modifier in functionDefinition.defType.modifier)
-			{
-				console.log("modifier:",functionDefinition.defType.modifier);
-			}
 			spaceBuffer = Buffer.from(" ",'utf8');
 			openingParenthesisBuffer = Buffer.from("(",'utf8');
 			closingParenthesisBuffer = Buffer.from(")",'utf8');
@@ -1926,8 +1907,6 @@ const parser = (function(){
 				{
 					case "Literal":
 						this.printLiteral(functionDefinition.arguments[argument])
-						//buffer = Buffer.from(functionDefinition.arguments[argument],"utf8");
-						//process.stdout.write(buffer.toString());
 					break;
 					default:
 						console.log("Unhandled argument type :",functionDefinition.arguments[argument]);
@@ -1997,7 +1976,7 @@ const parser = (function(){
 		},
 		printReturnStatement:function(returnStatement)
 		{
-			//console.log("Return Statement:",returnStatement);
+			
 			this.printTabs();
 			process.stdout.write("return ");
 			if(returnStatement.value!=undefined)
@@ -2023,7 +2002,7 @@ const parser = (function(){
 					console.log("Unhandled expression type:",expressionStatment.expression.type);
 					
 			}
-			//console.log("Expression Statement:",expressionStatment);
+			
 		},
 		
 		printLiteral:function(literal)
@@ -2044,15 +2023,24 @@ const parser = (function(){
 						case "base10Integer":
 							process.stdout.write(literal.value.value.toString(10));
 						break;
-						case "":
+						case "base16Integer":
 							process.stdout.write("0x");
 							process.stdout.write(literal.value.value.toString(16));
 						break;
+						case "singleFloat":
+							process.stdout.write(literal.value.value.toString()+"f");
+						break;
+						case "doubleFloat":
+							process.stdout.write(literal.value.value.toString());
+						break;
 						default:
-						console.log(literal);
 							console.log("Unhandled literal number type:",literal.value.numberType);
 					}
 					//process.stdout.write(literal.value.toString());
+				break;
+				case "Char":
+					
+					process.stdout.write("'"+this.returnString(String.fromCharCode(literal.value))+"'");
 				break;
 				case "String":
 					this.printString(literal.value.toString());
@@ -2064,7 +2052,6 @@ const parser = (function(){
 		},
 		printVariableDeclaration(declaration,printTabs,wantNewLine)
 		{
-			//console.log(declaration);
 			if(printTabs){
 				this.printTabs();
 			}
@@ -2077,14 +2064,17 @@ const parser = (function(){
 					}
 					process.stdout.write(declaration.defType.name+" ");
 					process.stdout.write(declaration.name.toString()+" = ");
-					switch(declaration.value.type)
+					if(declaration.value!=undefined)
 					{
-						case "Literal":
-							this.printLiteral(declaration.value);
-							
-						break;
-						default:
-							console.log("Unhandled variable declaration type:",declaration.value.type);
+						switch(declaration.value.type)
+						{
+							case "Literal":
+								this.printLiteral(declaration.value);
+								
+							break;
+							default:
+								console.log("Unhandled variable declaration type:",declaration.value.type);
+						}
 					}
 					process.stdout.write(";");
 					if(wantNewLine)
@@ -2269,7 +2259,7 @@ const parser = (function(){
 		{
 			var statement = {type:"PreProcessorExpression",pos:position};
 			
-			//console.log("Current Character:"+this.currentCharacter);
+			
 			if(this.lookAhead("include"))
 			{
 				if(this.lookAhead("\""))

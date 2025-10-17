@@ -325,6 +325,7 @@ const parser = (function(){
 		defineConstants:{},
 		defines:[],
 		EOF:false,
+		types:[],
 		sortKeywords:function()
 		{
 			//console.log("keywords:",keywords);
@@ -342,6 +343,17 @@ const parser = (function(){
 			});
 			this.typeNames = this.typeNames.filter(element => element !== undefined);
 			//console.log("sorted types:",this.typeNames);
+		},
+		applyTypes:function()
+		{
+			for(var type in types)
+			{
+				if(!this.types.includes(types[type]))
+				{
+					this.types.push(types[type]);
+				}
+			}
+			
 		},
 		sortTypeModifiers:function(){
 			//console.log("modifiers:",typeModifiers);
@@ -376,6 +388,18 @@ const parser = (function(){
 		},
 		parse:function(text,name)
 		{
+			this.types=[];
+			this.applyTypes();
+			this.statements=[];
+			this.keywords=[];
+			this.typeNames=[];
+			this.typeModifiers=[];
+			this.operations=[];
+			this.sortedOperations=[];
+			this.tabCount=0;
+			this.defineConstants={};
+			this.defines=[];
+			this.EOF = false;
 			file.content = text;
 			file.name = name;
 			file.characterPosition=0;
@@ -411,11 +435,11 @@ const parser = (function(){
 						this.consume(";");
 					}
 					this.consume("};");
-					if(types.includes(statement.name))
+					if(this.types.includes(statement.name))
 					{
-						unexpected("duplicate name:"+statement.name);
+						this.unexpected("duplicate name:"+statement.name);
 					}
-					types.push(statement.name);
+					this.types.push(statement.name);
 					this.sortTypes();
 					this.statements.push(statement);
 					

@@ -496,6 +496,7 @@ const parser = (function(){
 					}
 				}
 			}
+			return this.statements;
 		},
 		isWS:function(theChar)
 		{
@@ -1895,12 +1896,15 @@ const parser = (function(){
 			//console.log("Return Statement:",returnStatement);
 			this.printTabs();
 			process.stdout.write("return ");
-			switch(returnStatement.value.type){
-				case "Literal":
-					this.printLiteral(returnStatement.value);
-				break;
-				default:
-					console.log("Unhandled return statement type:",returnStatement.value.type);
+			if(returnStatement.value!=undefined)
+			{
+				switch(returnStatement.type){
+					case "ReturnStatement":
+						this.printLiteral(returnStatement.value);
+					break;
+					default:
+						console.log("Unhandled return statement type:",returnStatement.type);
+				}
 			}
 			process.stdout.write(";\n");
 		},

@@ -637,7 +637,7 @@ const parser = (function(){
 				if(file.characterPosition<file.content.length)
 				{
 					if(file.line==-1)
-					{ // make sure to start on line 1
+					{
 						file.line++;
 					}
 					if(this.currentCharacter=='\r'&&this.nextCharacter=='\n')
@@ -811,7 +811,6 @@ const parser = (function(){
 				{
 					if(this.lookAhead(this.typeModifiers[index]))
 					{
-						//if(!
 						
 						file.characterPosition=_characterPosition;
 						file.lineCharacterPosition=_lineCharacterPosition;
@@ -1000,7 +999,6 @@ const parser = (function(){
 			}
 			else
 			{
-				//this.unexpected ("Not Identifier");
 				return false;
 			}
 		},
@@ -1098,10 +1096,7 @@ const parser = (function(){
 						condition.value =this.readCharacter();
 						this.consume(":");
 					}
-					
-					
 					conditionsBlock.conditions.push(condition);
-					//conditions.push(condition);
 				}
 				else if (this.lookAhead("default"))
 				{
@@ -1173,11 +1168,7 @@ const parser = (function(){
 				
 			}
 		
-			//if(this.currentCharacter=="}")
-			//{
-				this.consume("}");
-			//}
-			
+			this.consume("}");
 			return statements;
 		},
 		parseStatement:function(){
@@ -1549,7 +1540,6 @@ const parser = (function(){
 					var numberDef = { value:parseFloat(numberValue),"numberType":"doubleFloat"};
 					if(this.currentCharacter=='f')
 					{
-						// store as float
 						this.consume("f");
 						numberDef.numberType='singleFloat';
 					}
@@ -1859,7 +1849,6 @@ const parser = (function(){
 				case "Literal":
 				
 					this.printLiteral(theExpression.left.value);
-					//process.stdout.write(theExpression.left.value.toString());
 				break;
 				default:
 					console.log("[printBinaryExpression]Unhandled left binary expression type:",theExpression.left.type);
@@ -1872,7 +1861,6 @@ const parser = (function(){
 				break;
 				case "Literal":
 					this.printLiteral(theExpression.right);
-					//process.stdout.write(theExpression.right.value.toString());
 				break;
 				default:
 					console.log("[printBinaryExpression]Unhandled right binary expression type:",theExpression.right.type);
@@ -2036,7 +2024,6 @@ const parser = (function(){
 						default:
 							console.log("Unhandled literal number type:",literal.value.numberType);
 					}
-					//process.stdout.write(literal.value.toString());
 				break;
 				case "Char":
 					
@@ -2103,8 +2090,6 @@ const parser = (function(){
 				{
 					case "Literal":
 						this.printLiteral(args[arg])
-						//buffer = Buffer.from(functionDefinition.arguments[argument],"utf8");
-						//process.stdout.write(buffer.toString());
 					break;
 					default:
 						console.log("Unhandled argument type :",args[arg].type);
@@ -2266,7 +2251,6 @@ const parser = (function(){
 				{
 					path =[];
 					statement.typedef = {type:"include",pathStyle:"localRelative"};
-					// local include
 					while(this.currentCharacter!="\"")
 					{
 						path.push(this.currentCharacter);
@@ -2370,7 +2354,6 @@ const parser = (function(){
 					}
 					else if(this.lookAhead("("))
 					{
-						// this is a potentially a function
 						this.unexpected("Define Expressions Not Yet Implemented");
 					}
 					else

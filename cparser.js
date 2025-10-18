@@ -443,6 +443,7 @@ const parser = (function(){
 			return this.statements;
 		},
 		internalParse:function(){
+			console.log("Types:[",this.types,"]");
 			var internalStatements = [];
 			while(this.currentCharacter!=undefined)
 			{
@@ -487,12 +488,26 @@ const parser = (function(){
 					this.skipBlanks();
 					while(this.identifierIncoming())
 					{
-						this.skipBlanks();
-						var def = this.readIdentifier();
-						statement.member.push(def);
-						if(!this.lookAhead(","))
+						if(statement.member.length<=maxEnumMembers)
 						{
-							break;
+							this.skipBlanks();
+							var def = this.readIdentifier();
+							if(!statement.member.includes(def))
+							{
+								statement.member.push(def);
+							}
+							else
+							{
+								this.unexpected(`duplicate enumeration value:[${def}]`);
+							}
+							if(!this.lookAhead(","))
+							{
+								break;
+							}
+						}
+						else
+						{
+							this.unexpected("127 enum elements maximum");
 						}
 					}
 					this.consume("};");

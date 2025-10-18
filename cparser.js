@@ -310,7 +310,6 @@ const parser = (function(){
 		lineCharacterPosition:-1,
 		characterPosition:-1,
 	};
-	 
 	return {
 		lastCharacter:0,
 		currentCharacter:0,
@@ -328,6 +327,29 @@ const parser = (function(){
 		types:[],
 		poundIfLevel:0,
 		poundIfData:{},
+		setFile:process.env.NODE_ENV === 'test'? function(text,name)
+		{
+			file.content = text;
+			file.name = name;
+			file.characterPosition=0;
+			this.lastCharacter = undefined;
+			if(file.content.length>0)
+			{
+				this.currentCharacter = file.content[file.characterPosition];
+			}
+			else
+			{
+				this.currentCharacter = undefined;
+			}
+			if(file.content.length>1)
+			{
+				this.nextCharacter = file.content[file.characterPosition+1];
+			}
+			else
+			{
+				this.nextCharacter = undefined;
+			}
+		}:undefined,
 		initialize:function()
 		{
 			this.types=[];
@@ -407,7 +429,16 @@ const parser = (function(){
 			file.content = text;
 			file.name = name;
 			file.characterPosition=0;
+			this.lastCharacter = undefined;
 			this.currentCharacter = file.content[file.characterPosition];
+			if(file.content.length>1)
+			{
+				this.nextCharacter = file.content[file.characterPosition+1];
+			}
+			else
+			{
+				this.nextCharacter = undefined;
+			}
 			this.statements = this.internalParse();
 			return this.statements;
 		},

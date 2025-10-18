@@ -69,15 +69,33 @@ test('test skipSpaces keepSpaces set to false with space',() => {
 		parser.setFile("1  2","main.c");
 		parser.next(false);
 		parser.skipSpaces(false);
-		console.log("File Position:[",parser.getFilePosition(),"]");
 		return parser.currentCharacter;
 	})();
 	expect(result).toBe("2");
 });
 
+test('test parseNumber',() => {
+	const result = (() => {
+		parser.setFile("0b00000000000000000000000000000000");
+		return parser.readNumber();
+	})();
+	expect(result).toStrictEqual({"minRepresentable": "int8_t","numberType": "base2Integer","value": 0});
+});
+
+test('test parseNumber',() => {
+	const result = (() => {
+		parser.setFile("0b11111111111111111111111111111111");
+		return parser.readNumber();
+	})();
+	expect(result).toStrictEqual({"minRepresentable": "uint32_t","numberType": "base2Integer","value": 4294967295});
+});
 
 test('test basic parse', () => {
   expect(parser.parse("void main(){}","main.c")).toStrictEqual([{"arguments": [], "body": [], "defType": {"modifier": [], "name": "void", "pos": 0, "type": "Type"}, "name": "main", "pos": 0, "type": "FunctionDefinition"}]);
+});
+
+test('test basic with return',()=>{
+	expect(parser.parse("void main(){return;}")).toStrictEqual([{"arguments":[],"body":[],"body":[{"pos": 12,"type": "ReturnStatement","value": undefined}],"defType":{"modifier":[],"name": "void","pos": 0,"type": "Type"},"name": "main","pos": 0,"type": "FunctionDefinition"}]);
 });
 
 test('test basic with return',()=>{

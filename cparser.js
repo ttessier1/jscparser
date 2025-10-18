@@ -1559,6 +1559,63 @@ const parser = (function(){
 				return false;
 			}
 		},
+		getMinRepresentable(numberValue)
+		{
+			if(numberValue >0)
+			{
+				if(numberValue <= SCHAR_MIN )
+				{
+					return "int8_t";
+				}
+				else if ( numberValue <=UCHAR_MAX )
+				{
+					return "uint8_t";
+				}
+				else if( numberValue <=SHRT_MAX)
+				{
+					return "int16_t";
+				}
+				else if(numberValue<=USHRT_MAX)
+				{
+					return "uint16_t";
+				}
+				else if(numberValue<=LONG_MAX)
+				{
+					return "int32_t";
+				}
+				else if(numberValue<=ULONG_MAX)
+				{
+					return "uint32_t";
+				}
+				else if(numberValue<=LLONG_MAX)
+				{
+					return "int64_t";
+				}
+				else if(numberValue<=ULLONG_MAX)
+				{
+					return "uint64_t";
+				}
+			}
+			else
+			{
+				if(numberValue>=SCHAR_MIN)
+				{
+					return "int8_t";
+				}
+				else if (numberValue>=SHRT_MIN)
+				{
+					return "int16_t";
+				}
+				else if(numberValue>=LONG_MIN)
+				{
+					return "int32_t";
+				}
+				else if(numberValue>=LLONG_MIN)
+				{
+					return "int64_t";
+				}
+			}
+		},
 		readNumber:function(keepBlanks)
 		{
 			if(this.currentCharacter=='0' &&this.nextCharacter=='b')
@@ -1566,20 +1623,21 @@ const parser = (function(){
 				this.next();
 				this.next();
 				var numberValue=this.readBinaryNumber(keepBlanks); 
-				return { value:numberValue,"numberType":"base2Integer"};
+				
+				return { value:numberValue,"numberType":"base2Integer","minRepresentable":this.getMinRepresentable(numberValue)};
 			}
 			else if ( this.currentCharacter=='0' && /[0-7]/.test(this.nextCharacter))
 			{
 				this.next();
 				var numberValue=this.readOctalNumber(keepBlanks);
-				return { value:numberValue,"numberType":"base8Integer"};
+				return { value:numberValue,"numberType":"base8Integer","minRepresentable":this.getMinRepresentable(numberValue)};
 			}
 			else if(this.currentCharacter =='0' && this.nextCharacter=='x')
 			{
 				this.next();
 				this.next();
 				var numberValue=this.readHexNumber(keepBlanks);
-				return { value:numberValue,"numberType":"base16Integer"};
+				return { value:numberValue,"numberType":"base16Integer","minRepresentable":this.getMinRepresentable(numberValue)};
 			}
 			else
 			{ 
@@ -1633,7 +1691,7 @@ const parser = (function(){
 				if(decimalCount==0)
 				{
 					var numberValue = this.readBase10Number(keepBlanks);
-					return { value:numberValue,"numberType":"base10Integer"};
+					return { value:numberValue,"numberType":"base10Integer","minRepresentable":this.getMinRepresentable(numberValue)};
 				}
 				else
 				{

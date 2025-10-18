@@ -444,7 +444,7 @@ const parser = (function(){
 		},
 		internalParse:function(){
 			var internalStatements = [];
-			while(this.currentCharacter)
+			while(this.currentCharacter!=undefined)
 			{
 				var position = file.characterPosition;
 				
@@ -562,19 +562,31 @@ const parser = (function(){
 		skipBlanks:function(){
 			while(/[\s\n]/.test(this.currentCharacter))
 			{
-				this.next();
-				
-				
+				this.next(true);
 			}
-			
+		},
+		getLastCharacter:function()
+		{
+			return this.lastCharacter;
+		},
+		getCurrentCharacter:function()
+		{
+			return this.currentCharacter;
+		},
+		getNextCharacter:function()
+		{
+			return this.nextCharacter;
+		},
+		getFilePosition:function(){
+			return file.characterPosition;
 		},
 		skipSpaces:function(includeSpaces){
-			if(includeSpaces)
+			if(includeSpaces===true)
 			{
-				return;
+				return false;
 			}
-			if(/\s\n/.test(this.currentCharacter)){
-				while(this.currentCharacter&&/\s\n/.test(this.currentCharacter))
+			if(/[\s\n]/.test(this.currentCharacter)){
+				while(this.currentCharacter&&/[\s\n]/.test(this.currentCharacter))
 				{
 					if(this.currentCharacter=='\n'){
 						this.gotoNextLine();
@@ -583,7 +595,35 @@ const parser = (function(){
 						this.gotoNextCharacter();
 						this.gotoNextLine();
 					}
+					else
+					{
+						file.characterPosition++;
+					}
+					if(file.characterPosition>0)
+					{
+						this.lastCharacter = file.content[file.characterPosition-1];
+					}
+					else
+					{
+						this.lastCharacter = undefined;
+					}
 					
+					if(file.content.length>file.characterPosition)
+					{
+						this.currentCharacter = file.content[file.characterPosition];
+					}
+					else
+					{
+						this.currentCharacter = undefined;
+					}
+					if(file.content.length>file.characterPosition+1)
+					{
+						this.nextCharacter = file.content[file.characterPosition+1];
+					}
+					else
+					{
+						this.nextCharacter = undefined;
+					}
 				}
 				return true;
 			}
@@ -622,7 +662,7 @@ const parser = (function(){
 		gotoNextLine:function(){
 			file.line++;
 			file.lineCharacterPosition=0;
-			gotoNextCharacter();
+			this.gotoNextCharacter();
 		},
 		gotoNextCharacter:function(){
 			file.characterPosition++;
@@ -665,7 +705,7 @@ const parser = (function(){
 			return true;
 		},
 		next:function(includeSpaces,includeComments){
-			includeSpaces=includeSpaces|false;
+			includeSpaces=includeSpaces||false;
 			if(file.content!=null)
 			{
 				if(file.characterPosition<file.content.length)
@@ -817,9 +857,12 @@ const parser = (function(){
 						
 						return false;
 					}
+					else
+					{
+						
+					}
 					this.next(true);
 				}
-				
 				if(/^[_a-zA-Z][_a-zA-Z0-9]*$/.test(str) && /[_a-zA-Z]/.test(this.currentCharacter))
 				{
 					file.characterPosition=_characterPosition;
@@ -859,11 +902,9 @@ const parser = (function(){
 			
 		},
 		definitionIncomming:function(){
-			
 			var _line=file.line;
 			var _lineCharacterPosition=file.lineCharacterPosition;
 			var _characterPosition = file.characterPosition;
-			
 			for(var index=0;index<this.typeModifiers.length;index++)
 			{
 				
@@ -900,21 +941,20 @@ const parser = (function(){
 			
 			for(var index=0;index<this.typeNames.length;index++)
 			{
-				if(this.typeNames[index])
+				if(this.typeNames[index] != undefined)
 				{
-					
 					if(this.lookAhead(this.typeNames[index]))
 					{
 						
 						file.characterPosition=_characterPosition;
 						file.lineCharacterPosition=_lineCharacterPosition;
 						file.line = _line;
-						this.currentCharacter=file.content[file.characterPosition];
 						if(file.characterPosition>0){
 							this.lastCharacter=file.content[file.characterPosition-1];
 						}else{
 							this.lastCharacter=undefined;
 						}
+						this.currentCharacter=file.content[file.characterPosition];
 						if(file.content.length>file.characterPosition+1)
 						{
 							this.nextCharacter = file.content[file.characterPosition+1];
@@ -932,10 +972,9 @@ const parser = (function(){
 				}
 				else
 				{
-					console.error("ERROR: this.typeNames["+index+"] is NULL");
+					console.error("ERROR: this.typeNames["+index+"] is undefined");
 				}
 			}
-			
 			return false;
 		},
 		readDefinition:function(nameless)

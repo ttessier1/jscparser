@@ -10,7 +10,6 @@ function clearModuleCache(modulePath) {
   }
 }
 
-
 process.stdout.setDefaultEncoding('utf-8');
 
 const directoryPath = path.join(__dirname, 'test');

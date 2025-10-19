@@ -443,7 +443,6 @@ const parser = (function(){
 			return this.statements;
 		},
 		internalParse:function(){
-			console.log("Types:[",this.types,"]");
 			var internalStatements = [];
 			while(this.currentCharacter!=undefined)
 			{
@@ -1026,7 +1025,6 @@ const parser = (function(){
 							target:def,
 							pos:file.characterPosition
 						};
-						//console.log("Pointer:",def);
 					}
 					if(!nameless)
 					{
@@ -1053,7 +1051,6 @@ const parser = (function(){
 							name:name,
 							pos:position
 						}
-						//console.log("Def:[",def,"]");
 					}
 					return def;
 				}
@@ -2142,8 +2139,6 @@ const parser = (function(){
 						switch(functionDefinition.arguments[argument].defType.type.trim())
 						{
 							case "Type":
-								//console.log(functionDefinition.arguments[argument].defType);
-								
 								for(var modifier in functionDefinition.arguments[argument].defType.modifier)
 								{
 									argumentString += functionDefinition.arguments[argument].defType.modifier[modifier] + " ";
@@ -2158,7 +2153,6 @@ const parser = (function(){
 								{
 									argumentString += functionDefinition.arguments[argument].defType.target.modifier[modifier] + " ";
 								}
-								//console.log("Pointer Target[",functionDefinition.arguments[argument].defType.target,"]");
 								argumentString += functionDefinition.arguments[argument].defType.target.target.name;
 								argumentString += this.printPointer(functionDefinition.arguments[argument],true);
 								argumentString += functionDefinition.arguments[argument].name;
@@ -2265,7 +2259,6 @@ const parser = (function(){
 						stringContent += "*";
 					break;
 					case "Pointer":
-						console.log("Printing Pointer SubType:[",pointerDefinition.defType.target,"]");
 						if(pointerDefinition.defType.target.modifier!=undefined)
 						{
 							for(var modifier in pointerDefinition.defType.target.modifier)

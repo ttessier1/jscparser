@@ -507,7 +507,7 @@ const parser = (function(){
 						}
 						else
 						{
-							this.unexpected("127 enum elements maximum");
+							this.unexpected(`${maxEnumMembers} enum elements maximum - length:[${statement.member.length}]`);
 						}
 					}
 					this.consume("};");

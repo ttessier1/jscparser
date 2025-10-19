@@ -3,6 +3,8 @@
 This project is not a fork but heavily based off of the work of: https://github.com/M4GNV5/cparse
 The further requirements of this project are:<br >
 
+Project Wiki https://github.com/ttessier1/jscparser/wiki
+
 TODO: Add support for Switch Statements - <b>Resolved initial implementation</b><br >
 TODO: Add support for #define Statements - <b>Resolved initial implementation</b><br >
 TODO: Add support for #include Statements - <b>Resolved parse but not reading included file</b><br >

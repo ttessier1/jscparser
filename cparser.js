@@ -613,7 +613,7 @@ const parser = (function(){
 						def.type = "GlobalVariableDeclaration";
 						internalStatements.push(def);
 						this.globalVariableCount++;
-						if(this.globalVariableCount>)
+						if(this.globalVariableCount>maxIdentifiersWithinScopeBlock)
 						{
 							this.unexpected("Too many globals");
 						}

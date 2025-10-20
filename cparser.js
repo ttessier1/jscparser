@@ -169,7 +169,7 @@ const trigraphs= {
 };
 
 const escapeSequences = {
-	"a":"\a", // alarm
+	"a":String.fromCharCode(7), // alarm
 	"b":"\b", // backspace
 	"f":"\f", // form feed
 	"n":"\n", // new line
@@ -1238,14 +1238,15 @@ const parser = (function(){
 		},
 		readIdentifier:function(keepBlanks)
 		{
-			var identifier = this.read(/[A-Za-z0-9_]/,"Identifier",/[A-Za-z_]/,keepBlanks);
+			var identifier = this.read(/[a-zA-Z0-9_]/,"Identifier",/[a-zA-Z_]/,keepBlanks);
 			if(!keywords.includes(identifier))
 			{
 				return identifier;
 			}
 			else
 			{
-				this.unexpected("Can't use keyword as identifier:[",identifier,"]");
+				
+				this.unexpected("identifier:[",identifier,"]");
 			}
 		},
 		read:function(reg,expected,startreg,keepBlanks){
@@ -1254,18 +1255,18 @@ const parser = (function(){
 			{
 				this.unexpected(expected);
 			}
-			var val = [this.currentCharacter];
-			this.next(true);
+			//var val = [this.currentCharacter];
+			//this.next(true);
+			var val=[];
 			while(this.currentCharacter && reg.test(this.currentCharacter))
 			{
 				val.push(this.currentCharacter);
-				this.next();
+				this.next(true);
 			}
 			if(!keepBlanks)
 			{
 				this.skipBlanks();
 			}
-			
 			return val.join("");
 		},
 		parseArgumentDefinitions:function()
@@ -1560,10 +1561,14 @@ const parser = (function(){
 			else if (this.lookAhead("'"))
 			{
 				var val = this.currentCharacter.charCodeAt(0);
+				var isEscape = false;
 				if(this.currentCharacter == "\\")
 				{
+					
+					isEscape=true;
 					this.next();
 					val = this.readEscapeSequence().charCodeAt(0);
+					
 				}else{
 					this.next(true,true);
 				}
@@ -1572,6 +1577,7 @@ const parser = (function(){
 					type:"Literal",
 					literalType:"Char",
 					source:"CharCode",
+					isEscape:isEscape,
 					value:val
 				};
 				
@@ -1662,18 +1668,76 @@ const parser = (function(){
 			if(this.currentCharacter=="x"){
 				this.next(true,true);
 				var val = 0;
-				while(/[0-9A-Fa-f]/.test(this.currentCharacter))
+				var charCount=0;
+				while(/[0-9A-Fa-f]/.test(this.currentCharacter)&& charCount<=2)
 				{
-					val = (val<<4)+parseInt(this.currentCharacter,16);
+					val = ((val<<4)+parseInt(this.currentCharacter,16));
 					this.next(true,true);
+					charCount++;
+				}
+				
+				if(charCount!=2)
+				{
+					this.unexpected("Hex character with count not 2");
 				}
 				return String.fromCharCode(val);
 			}else if ( /[0-7]/.test(this.currentCharacter)){
 				var val = 0 ;
-				while( /[0-7]/.test(this.currentCharacter))
+				var charCount=0;
+				while( /[0-7]/.test(this.currentCharacter)&&charCount<=3)
 				{
-					val = (val<<3)+parseInt(this.currentCharacter,16);
+					val = ((val<<3)+parseInt(this.currentCharacter,8));
+					if(val<=255)
+					{
+						this.next(true,true);
+						charCount++;
+					}
+					else
+					{
+						this.unexpected("Octal character values may only be up to 255");
+					}
+				}
+				if(charCount!=3)
+				{
+					this.unexpected(["Octal character with count not 3",charCount].join(""));
+				}
+				return String.fromCharCode(val);
+			}else if( /u/.test(this.currentCharacter)){
+				var val = 0 ;
+				var charCount=0;
+				this.next();
+				while( /[0-9a-fA-F]/.test(this.currentCharacter)&&charCount<=4)
+				{
+					val = ((val<<4)+parseInt(this.currentCharacter,16));
 					this.next(true,true);
+					charCount++;
+				}
+				if(!/^.$/u.test(String.fromCharCode(val)))
+				{
+					this.unexpected(["Invalid Unicode code point:[",val,"]"].join(""));
+				}
+				if(charCount !==4)
+				{
+					this.unexpected("Unicode escape with count not 4 characters");
+				}
+				return String.fromCharCode(val);
+			}else if( /U/.test(this.currentCharacter)){
+				var val = 0 ;
+				var charCount=0;
+				this.next();
+				while( /[0-9a-fA-F]/.test(this.currentCharacter)&&charCount<=8)
+				{
+					val = ((val<<4)+parseInt(this.currentCharacter,16));
+					this.next(true,true);
+					charCount++;
+				}
+				if(!/^.$/u.test(String.fromCharCode(val)))
+				{
+					this.unexpected(["Invalid Unicode code point:[",val,"]"].join(""));
+				}
+				if(charCount !==8)
+				{
+					this.unexpected(["Unicode escape with count not 8 characters:[",charCount,"]"].join(""));
 				}
 				return String.fromCharCode(val);
 			}else if( Object.keys(escapeSequences).includes(this.currentCharacter)){

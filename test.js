@@ -163,7 +163,7 @@ test('test parseString "test\\a\\b\\r\\n\\t"',() =>{
 		parser.setFile("\"test\\a\\b\\r\\n\\t\"","main.c");
 		return parser.readString();
 	})();
-	expect(result).toStrictEqual("test\a\b\r\n\t");
+	expect(result).toStrictEqual("test"+ String.fromCharCode(7)+"\b\r\n\t");
 });
 
 test('test returnString "test\\a\\b\\r\\n\\t"',() =>{
@@ -171,6 +171,58 @@ test('test returnString "test\\a\\b\\r\\n\\t"',() =>{
 		return parser.returnString("test\a\b\r\n\t");
 	})();
 	expect(result).toStrictEqual("test\\a\\b\\r\\n\\t");
+});
+
+// ########################################################################################
+// Test Individual functions - Parse Character
+// ########################################################################################
+
+test('test parseStatement char a=\'a\';',() =>{
+	const result = (() => {
+		parser.setFile("char a='a';","main.c");
+		return parser.parseStatement();
+	})();
+	expect(result).toStrictEqual({"defType":{"modifier":[],"name": "char","pos": 0,"type": "Type"},"name": "a","pos": 0,"type": "VariableDeclaration","value": { "isEscape": false,"literalType": "Char","pos": 7,"source": "CharCode","type":"Literal","value":97}});
+});
+
+test('test parseStatement char a=\'\\a\';',() =>{
+	const result = (() => {
+		parser.setFile("char  a='\\a';","main.c");
+		return parser.parseStatement();
+	})();
+	expect(result).toStrictEqual( {"defType":{"modifier":[],"name": "char","pos": 0,"type": "Type"},"name": "a","pos": 0,"type": "VariableDeclaration","value":{ "isEscape": true,"literalType": "Char","pos": 8,"source": "CharCode","type": "Literal","value": 7}});
+});
+
+test('test parseStatement char a=\'\\250\';',() =>{
+	const result = (() => {
+		parser.setFile("char  a='\\250';","main.c");
+		return parser.parseStatement();
+	})();
+	expect(result).toStrictEqual( {"defType":{"modifier":[],"name": "char","pos": 0,"type": "Type"},"name": "a","pos": 0,"type": "VariableDeclaration","value":{ "isEscape": true,"literalType": "Char","pos": 8,"source": "CharCode","type": "Literal","value": 168}});
+});
+
+test('test parseStatement char a=\'\\xA8\';',() =>{
+	const result = (() => {
+		parser.setFile("char  a='\\xA8';","main.c");
+		return parser.parseStatement();
+	})();
+	expect(result).toStrictEqual( {"defType":{"modifier":[],"name": "char","pos": 0,"type": "Type"},"name": "a","pos": 0,"type": "VariableDeclaration","value":{ "isEscape": true,"literalType": "Char","pos": 8,"source": "CharCode","type": "Literal","value": 168}});
+});
+
+test('test parseStatement char a=\'\\u2654\';',() =>{
+	const result = (() => {
+		parser.setFile("char  a='\\u2654';","main.c");
+		return parser.parseStatement();
+	})();
+	expect(result).toStrictEqual( {"defType":{"modifier":[],"name": "char","pos": 0,"type": "Type"},"name": "a","pos": 0,"type": "VariableDeclaration","value":{ "isEscape": true,"literalType": "Char","pos": 8,"source": "CharCode","type": "Literal","value": 9812}});
+});
+
+test('test parseStatement char a=\'\\U0001F600\';',() =>{
+	const result = (() => {
+		parser.setFile("char  a='\\U0001F600';","main.c");
+		return parser.parseStatement();
+	})();
+	expect(result).toStrictEqual( {"defType":{"modifier":[],"name": "char","pos": 0,"type": "Type"},"name": "a","pos": 0,"type": "VariableDeclaration","value":{ "isEscape": true,"literalType": "Char","pos": 8,"source": "CharCode","type": "Literal","value": 62976}});
 });
 
 // ########################################################################################

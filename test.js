@@ -1,4 +1,8 @@
 const parser = require('./cparser');
+
+// ########################################################################################
+// Test Individual functions - Skip Blanks
+// ########################################################################################
 test('test skipBlanks with no leading spaces', () => {
   const result = (() => {
     parser.setFile("a","main.c");
@@ -26,23 +30,6 @@ test('test skipBlanks with carriage return line feed', () => {
   expect(result).toBe("a");
 });
 
-test('test lookAhead', () => {
-	const result = (() => {
-		parser.setFile("#if\n","main.c");
-		return parser.lookAhead("#if");
-	})();
-	expect(result).toBe(true);
-});
-
-test('test consume', () => {
-	const result = (() => {
-		parser.setFile("#if 1","main.c");
-		parser.consume("#if");
-		parser.skipBlanks();
-		return parser.currentCharacter;
-	})();
-	expect(result).toBe("1");
-});
 
 test('test skipSpaces with no space',() => {
 	const result = (() => {
@@ -73,6 +60,34 @@ test('test skipSpaces keepSpaces set to false with space',() => {
 	})();
 	expect(result).toBe("2");
 });
+// ########################################################################################
+// Test Individual functions - LookAhead
+// ########################################################################################
+
+test('test lookAhead', () => {
+	const result = (() => {
+		parser.setFile("#if\n","main.c");
+		return parser.lookAhead("#if");
+	})();
+	expect(result).toBe(true);
+});
+
+// ########################################################################################
+// Test Individual functions - Skip Consume
+// ########################################################################################
+test('test consume', () => {
+	const result = (() => {
+		parser.setFile("#if 1","main.c");
+		parser.consume("#if");
+		parser.skipBlanks();
+		return parser.currentCharacter;
+	})();
+	expect(result).toBe("1");
+});
+
+// ########################################################################################
+// Test Individual functions - Parse Number
+// ########################################################################################
 
 test('test parseNumber 32bit binary 0',() => {
 	const result = (() => {
@@ -138,6 +153,11 @@ test('test parseNumber 32 bit dec 987654321',() => {
 	expect(result).toStrictEqual({"minRepresentable": "int32_t","numberType": "base10Integer","value": 987654321});
 });
 
+// ########################################################################################
+// Test Individual functions - Parse String
+// ########################################################################################
+
+
 test('test parseString "test\\a\\b\\r\\n\\t"',() =>{
 	const result = (() => {
 		parser.setFile("\"test\\a\\b\\r\\n\\t\"","main.c");
@@ -152,6 +172,10 @@ test('test returnString "test\\a\\b\\r\\n\\t"',() =>{
 	})();
 	expect(result).toStrictEqual("test\\a\\b\\r\\n\\t");
 });
+
+// ########################################################################################
+// Test Enumerations
+// ########################################################################################
 
 test('test parsing enumeration enum e_one{one_value};',() =>{
 	const result = (() => {
@@ -381,6 +405,29 @@ test('test parsing enumeration enum e_two{one_value};',() =>{
 	]);
 });
 
+// ########################################################################################
+// Test Struct
+// ########################################################################################
+
+// ########################################################################################
+// Test Unions
+// ########################################################################################
+
+// ########################################################################################
+// Test Switch/Case Statement
+// ########################################################################################
+
+// ########################################################################################
+// Test while Statemet
+// ########################################################################################
+
+// ########################################################################################
+// Test Do While Statement
+// ########################################################################################
+
+// ########################################################################################
+// Test for Statement
+// ########################################################################################
 test('test basic parse', () => {
   expect(parser.parse("void main(){}","main.c")).toStrictEqual([{"arguments": [], "body": [], "defType": {"modifier": [], "name": "void", "pos": 0, "type": "Type"}, "name": "main", "pos": 0, "type": "FunctionDefinition"}]);
 });

@@ -168,13 +168,13 @@ const trigraphs= {
 };
 
 const escapeSequences = {
-	"a":"\a",
-	"b":"\b",
-	"f":"\f",
-	"n":"\n",
-	"r":"\r",
-	"t":"\t",
-	"v":"\v"
+	"a":"\a", // alarm
+	"b":"\b", // backspace
+	"f":"\f", // form feed
+	"n":"\n", // new line
+	"r":"\r", // carriage return
+	"t":"\t", // horizontal tab
+	"v":"\v" // vertical tab
 };
 
 const maxNestingLevelBlocks= 127;
@@ -457,19 +457,72 @@ const parser = (function(){
 					{
 						return internalStatements;
 					}
-				}
-				else if(this.lookAhead("struct")){
-					
-					var statement = {type:"StructDefinition",member:[],pos:position};
+				}else if(this.lookAhead("union")){
+					var statement = {type:"UnionDefinition",memberNames:[],typeNames:[],member:[],pos:position};
+					statement.name = this.readIdentifier();
+					this.consume("{");
+					while(this.definitionIncomming())
+					{
+						if(statement.member.length<=maxStructOrUnionMembers)
+						{
+							this.skipBlanks();
+							var def = this.readDefinition();
+							var typeName = def.defType.modifier.length>0?def.defType.modifier.join(" ")+" "+def.defType.name:def.defType.name;
+							if(
+								 
+								!statement.typeNames.includes(typeName)
+								//&& !statement.memberNames.includes(def.name) 
+							)
+							{
+								statement.typeNames.push(typeName);
+								statement.memberNames.push(def.name);
+								statement.member.push(def);
+							}
+							else
+							{
+								this.unexpected(`Union Members must have unique names and types:[${def.name}] [${typeName}]`);
+							}
+							this.consume(";");
+						}
+						else
+						{
+							this.unexpected(`${maxStructOrUnionMembers} Union elements maximum - length:[${statement.member.length}]`);
+						}
+					}
+					this.consume("};");
+					if(this.types.includes(statement.name))
+					{
+						this.unexpected("duplicate name:"+statement.name);
+					}
+					this.types.push(statement.name);
+					this.sortTypes();
+					internalStatements.push(statement);
+				}else if(this.lookAhead("struct")){
+					var statement = {type:"StructDefinition",memberNames:[],member:[],pos:position};
 					statement.name = this.readIdentifier();
 					this.consume("{");
 					
 					while(this.definitionIncomming())
 					{
-						this.skipBlanks();
-						var def = this.readDefinition();
-						statement.member.push(def);
-						this.consume(";");
+						if(statement.member.length<=maxStructOrUnionMembers)
+						{
+							this.skipBlanks();
+							var def = this.readDefinition();
+							if(!statement.memberNames.includes(def.name))
+							{
+								statement.memberNames.push(def.name);
+								statement.member.push(def);
+							}
+							else
+							{
+								this.unexpected(`duplicate struct item:[${def}]`);
+							}
+							this.consume(";");
+						}
+						else
+						{
+							this.unexpected(`${maxStructOrUnionMembers} Struct elements maximum - length:[${statement.member.length}]`);
+						}
 					}
 					this.consume("};");
 					if(this.types.includes(statement.name))
@@ -836,6 +889,41 @@ const parser = (function(){
 				
 			throw new Error(msg);
 		},
+		getNextIdentifier()
+		{
+			var returnString= "";
+			var first = true;
+			var _line=file.line;
+			var _lineCharacterPosition=file.lineCharacterPosition;
+			var _characterPosition = file.characterPosition;
+			while(
+				(first && /[A-Za-z_]/.test(this.currentCharacter))
+				||/[A-Za-z0-9_]/.test(this.currentCharacter)
+			)
+			{
+				first = false;
+				returnString += this.currentCharacter;
+				this.next();
+			}
+			file.characterPosition=_characterPosition;
+			file.lineCharacterPosition=_lineCharacterPosition;
+			file.line = _line;
+			this.currentCharacter=file.content[file.characterPosition];
+			if(file.characterPosition>0){
+				this.lastCharacter=file.content[file.characterPosition-1];
+			}else{
+				this.lastCharacter=undefined;
+			}
+			if(file.content.length>file.characterPosition+1)
+			{
+				this.nextCharacter = file.content[file.characterPosition+1];
+			}
+			else
+			{
+				this.nextCharacter=undefined;
+			}
+			return returnString();
+		},
 		lookAhead:function(str,keepBlanks){
 			var _line=file.line;
 			var _lineCharacterPosition=file.lineCharacterPosition;
@@ -1000,22 +1088,33 @@ const parser = (function(){
 				modifier:[],
 				pos: file.characterPosition
 			};
+			var foundModifier=false;
+			var lastModifier="";
+			var modifierCount=0;
+			var foundType = false;
+			var typeCount=0;
+			var nextIdentifier="";
 			do{
 				var read = false;
 				for(var index=0;index < this.typeModifiers.length;index++)
 				{
 					if(this.lookAhead(this.typeModifiers[index]))
 					{
+						lastModifier = this.typeModifiers[index];
 						def.modifier.push(this.typeModifiers[index]);
 						read=true;
+						foundModifier=true;
+						modifierCount++;
 					}
 				}
 			}while(read);
-			
+			//nextIdentifier = this.getNextIdentifier();
 			for(var index = 0 ;index < this.typeNames.length;index++)
 			{
 				if(this.lookAhead(this.typeNames[index]))
 				{
+					foundType=true;
+					typeCount++;
 					def.name = this.typeNames[index].toString();
 					while(this.lookAhead("*"))
 					{
@@ -1055,52 +1154,60 @@ const parser = (function(){
 					return def;
 				}
 			}
-			if(def.modifier.length>0 && this.typeNames.includes(def.modifier[def.modifier.length-1]))
+			if(foundModifier&&!foundType) // NOTE: foundType is not necessarily needed here if we return above
 			{
-				def.name=def.modifier[def.modifier.length-1];
-				if(def.modifier.length>1)
+				if(foundModifier)
 				{
-					def.modifier.slice(0,def.modifier.length-1);
+					
+					if(def.modifier.length>0 && this.typeNames.includes(lastModifier))
+					{
+						def.name=lastModifier;
+						def.modifier=def.modifier.slice(0,def.modifier.length-1);
+						while(this.lookAhead("*"))
+						{
+							def = {
+								type:"Pointer",	
+								target:def,
+								pos:file.characterPosition
+							};
+						}
+						if(!nameless)
+						{
+							name = this.readIdentifier();
+						}
+						
+						while(this.lookAhead("["))
+						{
+							def = {
+								type:"Pointer",
+								target:def,
+								pos:file.characterPosition
+							};
+							if(!lookAhead("]"))
+							{
+								def.length = this.parseExpression();
+								this.consume("]");
+							}
+						}
+						if(name){
+							def = {
+								type:"Definition",
+								defType:def,
+								name:name,
+								pos:position
+							}
+						}
+						return def;
+					}
+					else
+					{
+						this.unexpected(this.typeNames.join(","));
+					}
 				}
 				else
 				{
-					def.modifier=[];
+					this.unexpected(this.typeNames.join(","));
 				}
-				while(this.lookAhead("*"))
-				{
-					def = {
-						type:"Pointer",	
-						target:def,
-						pos:file.characterPosition
-					};
-				}
-				if(!nameless)
-				{
-					name = this.readIdentifier();
-				}
-				
-				while(this.lookAhead("["))
-				{
-					def = {
-						type:"Pointer",
-						target:def,
-						pos:file.characterPosition
-					};
-					if(!lookAhead("]"))
-					{
-						def.length = this.parseExpression();
-						this.consume("]");
-					}
-				}
-				if(name){
-					def = {
-						type:"Definition",
-						defType:def,
-						name:name,
-						pos:position
-					}
-				}
-				return def;
 			}
 			this.unexpected(this.typeNames.join(","));
 		},
@@ -1109,7 +1216,6 @@ const parser = (function(){
 			
 			if(this.currentCharacter && /[A-Za-z_]/.test(this.currentCharacter))
 			{
-				
 				return true;
 			}
 			else
@@ -1864,6 +1970,9 @@ const parser = (function(){
 						case "StructDefinition":
 							this.printStructDefinition(theExpression[statement]);
 						break;
+						case "UnionDefinition":
+							this.printUnionDefinition(theExpression[statement]);
+						break;
 						case "EnumDefinition":
 							this.printEnumDefinition(theExpression[statement]);
 						break;
@@ -2176,6 +2285,43 @@ const parser = (function(){
 			this.tabCount--;
 			process.stdout.write("}\n");
 			
+		},
+		printUnionDefinition(unionDefinition)
+		{
+			process.stdout.write("union ");
+			process.stdout.write(unionDefinition.name);
+			process.stdout.write("{\n");
+			this.tabCount++;
+			for(var structItem in unionDefinition.member)
+			{
+				switch(unionDefinition.member[structItem].type)
+				{
+					case "Definition":
+						this.printTabs();
+						switch(unionDefinition.member[structItem].defType.type)
+						{
+							case "Type":
+								for(var modifier in unionDefinition.member[structItem].defType.modifier)
+								{
+									process.stdout.write(unionDefinition.member[structItem].defType.modifier[modifier].toString()+" ");
+								}
+								process.stdout.write(unionDefinition.member[structItem].defType.name.toString() + " ");
+							break;
+							case "Pointer":
+								process.stdout.write(unionDefinition.member[structItem].name+"");
+								process.stdout.write(this.printPointer(unionDefinition.member[structItem].defType.target,true));
+							break;	
+							default:
+								console.log("Unhandled union member type:",unionDefinition.member[structItem].type);
+						}
+						process.stdout.write(unionDefinition.member[structItem].name+";\n");
+					break;
+					default:
+						console.log("Unhandled union member type:",unionDefinition.member[structItem].type);
+				}
+			}
+			this.tabCount--;
+			process.stdout.write("};\n\n");
 		},
 		printStructDefinition(structDefinition)
 		{

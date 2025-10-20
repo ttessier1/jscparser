@@ -19,6 +19,7 @@ const typeModifiers = [
 	"static"//
 ];
 
+
 const operations = {
 "=":1, // assignment
 "+=":1,
@@ -1100,11 +1101,18 @@ const parser = (function(){
 				{
 					if(this.lookAhead(this.typeModifiers[index]))
 					{
-						lastModifier = this.typeModifiers[index];
-						def.modifier.push(this.typeModifiers[index]);
-						read=true;
-						foundModifier=true;
-						modifierCount++;
+						if(this.typeModifiers[index] != lastModifier)
+						{
+							lastModifier = this.typeModifiers[index];
+							def.modifier.push(this.typeModifiers[index]);
+							read=true;
+							foundModifier=true;
+							modifierCount++;
+						}
+						else
+						{
+							break;
+						}
 					}
 				}
 			}while(read);

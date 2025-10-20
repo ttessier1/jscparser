@@ -173,6 +173,15 @@ test('test returnString "test\\a\\b\\r\\n\\t"',() =>{
 	expect(result).toStrictEqual("test\\a\\b\\r\\n\\t");
 });
 
+test('test utf-8 string 0xf0 0x9f 0x98 0x83',() =>{
+	const result = (() => {
+		parser.setFile("\"test \\xf0\\x9f\\x98\\x83\"","main.c");
+		var string = parser.readString();
+		return string;
+	})();
+	expect(result).toStrictEqual("test \xf0\x9f\x98\x83");
+});
+
 // ########################################################################################
 // Test Individual functions - Parse Character
 // ########################################################################################
@@ -460,7 +469,13 @@ test('test parsing enumeration enum e_two{one_value};',() =>{
 // ########################################################################################
 // Test Struct
 // ########################################################################################
-
+test('test parsing struct st_one{char a; unsigned char b; short c;unsigned short d;int e;unsigned int f; long g; unsigned long h; long long i; unsigned long j; float k; double l;};',() =>{
+	const result = (() => {
+		parser.setFile("struct st_one{char a; unsigned char b; short c;unsigned short d;int e;unsigned int f; long g; unsigned long h; long long i; unsigned long j; float k; double l;};","main.c");
+		return parser.internalParse();
+	})();
+	expect(result).toStrictEqual([{"member":[{"defType": {"modifier": [],"name": "char","pos": 14,"type": "Type",},"name": "a","pos": 14,"type": "Definition",},{"defType": {"modifier": ["unsigned",],"name": "char","pos": 22,"type": "Type",},"name": "b","pos": 22,"type": "Definition",},{"defType": {"modifier": [],"name": "short","pos": 39,"type": "Type",},"name": "c","pos": 39,"type": "Definition",},{"defType": {"modifier": ["unsigned",],"name": "short","pos": 47,"type": "Type",},"name": "d","pos": 47,"type": "Definition",},{"defType": {"modifier": [],"name": "int","pos": 64,"type": "Type",},"name": "e","pos": 64,"type": "Definition",},{"defType": {"modifier": ["unsigned",],"name": "int","pos": 70,"type": "Type",},"name": "f","pos": 70,"type": "Definition",},{"defType": {"modifier": [],"name": "long","pos": 86,"type": "Type",},"name": "g","pos": 86,"type": "Definition",},{"defType": {"modifier": ["unsigned",],"name": "long","pos": 94,"type": "Type",},"name": "h","pos": 94,"type": "Definition",},{"defType": {"modifier": [],"name": "long","pos": 111,"type": "Type",},"name": "i","pos": 111,"type": "Definition",},{"defType": {"modifier": ["unsigned",],"name": "long","pos": 124,"type": "Type",},"name": "j","pos": 124,"type": "Definition",},{"defType": {"modifier": [],"name": "float","pos": 141,"type": "Type",},"name": "k","pos": 141,"type": "Definition",},{"defType": {"modifier": [],"name": "double","pos": 150,"type": "Type",},"name": "l","pos": 150,"type": "Definition",},],"memberNames": ["a","b","c","d","e","f","g","h","i","j","k","l",],"name": "st_one","pos": 0,"type": "EnumDefinition","type": "StructDefinition",},]);
+});
 // ########################################################################################
 // Test Unions
 // ########################################################################################

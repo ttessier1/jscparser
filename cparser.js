@@ -1745,7 +1745,7 @@ const parser = (function(){
 				this.next(true,true);
 				return escapeChar;
 			}
-			this.unexpected("escape sequence:[",this.currentCharacter,"] escape characters[",this.escapeSequences,"]");
+			this.unexpected(["escape sequence:[",this.currentCharacter,"] escape characters[",this.escapeSequences,"]"].join(""));
 			
 		},
 		numberIncoming:function()
@@ -1953,7 +1953,7 @@ const parser = (function(){
 				stringCharacterCount++;
 				if(stringCharacterCount>maxCharactersPerString)
 				{
-					this.unexpected("String length too long:"+stringCharacterCount.toString()+" "+maxCharactersPerString.toString());
+					this.unexpected(["String length too long:[",stringCharacterCount.toString()," ",maxCharactersPerString.toString(),"]"].join(""));
 				}
 			}
 			if(!this.lookAhead("\"",keepBlanks))

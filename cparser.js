@@ -612,6 +612,11 @@ const parser = (function(){
 						}
 						def.type = "GlobalVariableDeclaration";
 						internalStatements.push(def);
+						this.globalVariableCount++;
+						if(this.globalVariableCount>)
+						{
+							this.unexpected("Too many globals");
+						}
 					}
 					
 				}else{
@@ -1290,8 +1295,9 @@ const parser = (function(){
 			var body=[];
 			var first=true;
 			var foundDefault=false;
-			
+			var caseCount=0;
 			this.consume("{");
+			
 			while(!(this.currentCharacter=='}'||this.currentCharacter==undefined))
 			{
 				var condition={};
@@ -1299,6 +1305,11 @@ const parser = (function(){
 				this.skipBlanks();
 				if(this.lookAhead("case"))
 				{
+					caseCount++;
+					if(caseCount>maxSwitchCase)
+					{
+						this.unexpected("Too many case statements");
+					}
 					if(!first)
 					{
 						if(conditionsBlock.body.length>0)

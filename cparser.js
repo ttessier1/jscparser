@@ -1,3 +1,6 @@
+const path = require('node:path/win32');
+const fs = require('fs');
+
 const types = [
 	"void",
 	"char",
@@ -328,6 +331,12 @@ const parser = (function(){
 		types:[],
 		poundIfLevel:0,
 		poundIfData:{},
+		relativePath:"./",
+		fileStack:[],// save file context until done parsing 3s then restore the file context
+		setRelativePath:function(path)
+		{
+			this.relativePath=path;
+		},
 		setFile:process.env.NODE_ENV === 'test'? function(text,name)
 		{
 			file.content = text;
@@ -990,7 +999,7 @@ const parser = (function(){
 					{
 						this.nextCharacter=undefined;
 					}
-					
+					console.log("Return Because Identifier Matched");
 					return false;
 				}
 				
@@ -1008,6 +1017,62 @@ const parser = (function(){
 				this.unexpected("NULL or empty for lookahead");
 			}
 			
+		},
+		preprocessorLookAhead(str,keepBlanks)
+		{
+			var _line=file.line;
+			var _lineCharacterPosition=file.lineCharacterPosition;
+			var _characterPosition = file.characterPosition;
+			if(str && str.length!=0)
+			{
+				
+				for(var index=0;index<str.length;index++)
+				{
+					if(this.currentCharacter != str[index])
+					{
+						if ( str == "endif" && this.currentCharacter!=str[index])
+						{
+							console.log("Endif is not Endif:[",index,"] [",str,"] [",str[index],"] [",this.lastCharacter,"][",this.currentCharacter,"] [",this.nextCharacter,"]");
+						}
+						file.characterPosition=_characterPosition;
+						file.lineCharacterPosition=_lineCharacterPosition;
+						file.line = _line;
+						this.currentCharacter=file.content[file.characterPosition];
+						if(file.characterPosition>0){
+							this.lastCharacter=file.content[file.characterPosition-1];
+						}else{
+							this.lastCharacter=undefined;
+						}
+						if(file.content.length>file.characterPosition+1)
+						{
+							this.nextCharacter = file.content[file.characterPosition+1];
+						}
+						else
+						{
+							this.nextCharacter=undefined;
+						}
+						
+						return false;
+					}
+					else
+					{
+						
+					}
+					this.next(true);
+				}
+				if(!keepBlanks)
+				{
+					
+					this.skipBlanks();
+					
+				}
+				
+				return true;
+			}
+			else
+			{
+				this.unexpected("NULL or empty for lookahead");
+			}
 		},
 		definitionIncomming:function(){
 			var _line=file.line;
@@ -2883,20 +2948,38 @@ const parser = (function(){
 		{
 			var statement = {type:"PreProcessorExpression",pos:position};
 			var statements = [];
-			if(this.lookAhead("include"))
+			if(this.preprocessorLookAhead("include"))
 			{
 				if(this.lookAhead("\""))
 				{
-					path =[];
+					var filepath =[];
 					statement.typedef = {type:"include",pathStyle:"localRelative"};
 					while(this.currentCharacter!="\"")
 					{
-						path.push(this.currentCharacter);
+						filepath.push(this.currentCharacter);
 						this.next();
 					}
-					statement.typedef.path = path.join("");
+					statement.typedef.path = filepath.join("");
 					this.consume("\"");
+					
+					const directoryPath = this.relativePath
 					statements.push(statement);
+					
+					this.fileStack.push({file:file,currentCharacter:this.currentCharacter,nextCharacter:this.nextCharacter,lastCharacter:this.lastCharacter});
+					file={};
+					file.line==-1;
+					file.characterPosition=-1;
+					file.lineCharacterPosition=-1;
+					
+					fs.readFile(path.join(directoryPath,filepath.join("")), 'utf8', (err, data) => {
+						statement.body=this.parse(data,filepath.join(""));
+					});
+					statements.push(statement);
+					save = this.fileStack.pop();
+					file = save.file;
+					this.currentCharacter = save.currentCharacter;
+					this.nextCharacter = save.nextCharacter;
+					this.lastCharacter = save.lastCharacter;
 				}
 				else if ( this.lookAhead("<"))
 				{
@@ -2916,7 +2999,7 @@ const parser = (function(){
 					this.unexpected("\" or < expected after include");
 				}
 			}
-			else if(this.lookAhead("define"))
+			else if(this.preprocessorLookAhead("define"))
 			{
 				statement.typedef = {type:"define"};
 				if(this.identifierIncoming())
@@ -3000,14 +3083,19 @@ const parser = (function(){
 					}
 				}
 			}
-			else if(this.lookAhead("if"))
+			else if(this.preprocessorLookAhead("if"))
 			{
 				this.poundIfLevel++;
 				var number=0;
+				var invertResult=false;
+				if(this.lookAhead("!"))
+				{
+					invertResult=true;
+				}
 				if(this.numberIncoming())
 				{
 					number = this.readNumber();
-					if(number.numberType=="base10Integer" && number.value == 0)
+					if(number.numberType=="base10Integer" && number.value == 0 && !invertResult)
 					{
 						// Skipping Code
 						var statements = this.internalParse();
@@ -3018,10 +3106,41 @@ const parser = (function(){
 					{
 						// Include Code
 						var statements = this.internalParse();
-						this.poundIfData[poundIfLevel]=1;
+						this.poundIfData[this.poundIfLevel]=1;
 						return { "return" :false,statements:statements};
 					}
 					console.log("Number:[",number,"]");
+				}
+				else if (this.lookAhead("defined"))
+				{
+					var defineVar = "";
+					if(this.lookAhead("("))
+					{
+						if(this.identifierIncoming())
+						{
+							defineVar = this.readIdentifier();
+						}
+						this.consume(")");
+					}
+					else
+					{
+						if(this.identifierIncoming())
+						{
+							defineVar = this.readIdentifier();
+						}
+					}
+					if(this.defines.includes(defineVar)&& !invertResult)
+					{
+						var statements = this.internalParse();
+						this.poundIfData[this.poundIfLevel]=1;
+						return { "return" :false,statements:statements};
+					}
+					else
+					{
+						var statements = this.internalParse();
+						this.poundIfData[this.poundIfLevel]=0;
+						return { "return" :false,statements:[]};
+					}
 				}
 				else
 				{
@@ -3033,7 +3152,7 @@ const parser = (function(){
 				}
 
 			}
-			else if(this.lookAhead("elif"))
+			else if(this.preprocessorLookAhead("elif"))
 			{
 				this.poundIfLevel++;
 				var number=0;
@@ -3050,9 +3169,9 @@ const parser = (function(){
 					{
 						// Include Code
 						var statements = this.internalParse();
-						if(this.poundIfData[poundIfLevel]==1)
+						if(this.poundIfData[this.poundIfLevel]==1)
 						{
-							this.poundIfData[poundIfLevel]=1;
+							this.poundIfData[this.poundIfLevel]=1;
 							return { "return" :false,statements:statements};
 						}
 						else
@@ -3060,7 +3179,6 @@ const parser = (function(){
 							this.unexpected("#elif evalutes to true along with other ");
 						}
 					}
-					console.log("Number:[",number,"]");
 				}
 				else
 				{
@@ -3071,7 +3189,7 @@ const parser = (function(){
 					this.next();
 				}
 			}
-			else if(this.lookAhead("else"))
+			else if(this.preprocessorLookAhead("else"))
 			{
 				this.consume("\n");
 				var statements = this.internalParse();
@@ -3087,16 +3205,15 @@ const parser = (function(){
 				// all other cases if not filled go here
 			}
 			
-			else if(this.lookAhead("pragma"))
+			else if(this.preprocessorLookAhead("pragma"))
 			{
 				while(this.currentCharacter!="\n")
 				{
 					this.next();
 				}
 			}
-			else if(this.lookAhead("error"))
+			else if(this.preprocessorLookAhead("error"))
 			{
-				console.log("Inside Error #error");
 				var errorString = [];
 				if(this.lookAhead("\""))
 				{
@@ -3109,22 +3226,24 @@ const parser = (function(){
 						this.unexpected("\"");
 					}
 					this.consume("\"");
-					console.error(errorString.join(""));
+					
+					throw new Error(["CompileError:[",errorString.join(""),"]"].join(""));
 				}
 				else
 				{
 					this.unexpected("Quotes String");
 				}
 			}
-			else if(this.lookAhead("endif"))
+			else if(this.preprocessorLookAhead("endif"))
 			{
-				this.poundIfData[poundIfLevel]=undefined;
-				this.poundIfLevel++;
-				this.consume("\n");
+				console.log("Inside EndIf Current Character[",this.currentCharacter,"] NextCharacter:[",this.nextCharacter,"] lastCharacter:[",this.lastCharacter,"]");
+				this.characterPosition
+				this.poundIfData[this.poundIfLevel]=undefined;
+				this.poundIfLevel--;
 				return { "return":true,statements:[]};
 			}
 			else{
-				this.unexpected("#include #define #if #elif #else #endif #pragma #error");
+				this.unexpected(["#include #define #if #elif #else #endif #pragma #error",]);
 			}
 			return { "return" :false,statements:statements};
 		}

@@ -30,6 +30,7 @@ else if (process.argv.length === 2) {
 		fs.readFile(path.join(directoryPath,file), 'utf8', (err, data) => {
 			clearModuleCache("./cparser");
 			parser = require("./cparser");
+			parser.setRelativePath("test/");
 			if (err) {
 				console.error("Error reading file:", err);
 				return;
@@ -79,6 +80,7 @@ else if (process.argv.length === 2) {
 			fs.readFile(path.join(directoryPath,file), 'utf8', (err, data) => {
 				clearModuleCache("./cparser");
 				parser = require("./cparser");
+				parser.setRelativePath("test");
 				if (err) {
 					console.error("Error reading file:", err);
 					return;

@@ -471,7 +471,7 @@ const parser = (function(){
 							var typeName = def.defType.modifier.length>0?def.defType.modifier.join(" ")+" "+def.defType.name:def.defType.name;
 							if(
 								 
-								!statement.typeNames.includes(typeName)
+								!statement.typeNames.includes(def.name)
 								//&& !statement.memberNames.includes(def.name) 
 							)
 							{
@@ -528,7 +528,7 @@ const parser = (function(){
 					this.consume("};");
 					if(this.types.includes(statement.name))
 					{
-						this.unexpected("duplicate name:"+statement.name);
+						this.unexpected(["duplicate name:[",statement.name,"]"].join(""));
 					}
 					this.types.push(statement.name);
 					this.sortTypes();
@@ -1116,12 +1116,47 @@ const parser = (function(){
 						}
 						else
 						{
-							break;
+							def.name= this.typeModifiers[index];
+							while(this.lookAhead("*"))
+							{
+								
+								def = {
+									type:"Pointer",	
+									target:def,
+									pos:file.characterPosition
+								};
+							}
+							if(!nameless)
+							{
+								name = this.readIdentifier();
+							}
+							
+							while(this.lookAhead("["))
+							{
+								def = {
+									type:"Pointer",
+									target:def,
+									pos:file.characterPosition
+								};
+								if(!lookAhead("]"))
+								{
+									def.length = this.parseExpression();
+									this.consume("]");
+								}
+							}
+							if(name){
+								def = {
+									type:"Definition",
+									defType:def,
+									name:name,
+									pos:position
+								}
+							}
+							return def;
 						}
 					}
 				}
 			}while(read);
-			//nextIdentifier = this.getNextIdentifier();
 			for(var index = 0 ;index < this.typeNames.length;index++)
 			{
 				if(this.lookAhead(this.typeNames[index]))
@@ -2035,9 +2070,6 @@ const parser = (function(){
 						case "FunctionDefinition":
 							this.printFunctionDefinition(theExpression[statement]);
 						break;
-						//case "CallStatement":
-						//	this.printCallStatement(theExpression[statement]);
-						//break;
 						case "ExpressionStatement":
 							this.printExpressionStatement(theExpression[statement]);
 						break;
@@ -2067,14 +2099,27 @@ const parser = (function(){
 						break;
 						case "ForStatement":
 							process.stdout.write("for(");
-							switch(theExpression[statement].init.type){
-								case "VariableDeclaration":
-									this.printVariableDeclaration(theExpression[statement].init);
-								break;
-								default:
-									console.log("[print]Unhandled for loop init type:[",theExpression[statement].init.type,"]");
-									
+							if(theExpression[statement].init.type && theExpression[statement].init.expression!=undefined||
+							theExpression[statement].init.type=="VariableDeclaration"
+							)
+							{
+								switch(theExpression[statement].init.type){
+									case "VariableDeclaration":
+										this.printVariableDeclaration(theExpression[statement].init);
+									break;
+									case "ExpressionStatement":
+										this.printExpressionStatement(theExpression[statement].init);
+									break;
+									default:
+										console.log("[print]Unhandled for loop init type:[",theExpression[statement].init.type,"]");
+										
+								}
 							}
+							else
+							{
+
+							}
+							process.stdout.write(";");
 							switch(theExpression[statement].condition.type)
 							{
 								case "BinaryExpression":
@@ -2557,6 +2602,9 @@ const parser = (function(){
 							console.log("Unhandled expression value type:[",expressionStatment.expression.value.type,"]");
 					}
 					break;
+				case "BinaryExpression":
+					this.printBinaryExpression(expressionStatment.expression);
+				break;
 				default:
 					console.log("Unhandled expression type:",expressionStatment.expression.type);
 					
@@ -2634,10 +2682,10 @@ const parser = (function(){
 								console.log("Unhandled variable declaration type:",declaration.value.type);
 						}
 					}
-					process.stdout.write(";");
+					
 					if(wantNewLine)
 					{
-						process.stdout.write("\n");
+						process.stdout.write(";\n");
 					}
 				break;
 				default:
@@ -3048,6 +3096,7 @@ const parser = (function(){
 			}
 			else if(this.lookAhead("error"))
 			{
+				console.log("Inside Error #error");
 				var errorString = [];
 				if(this.lookAhead("\""))
 				{
@@ -3062,6 +3111,10 @@ const parser = (function(){
 					this.consume("\"");
 					console.error(errorString.join(""));
 				}
+				else
+				{
+					this.unexpected("Quotes String");
+				}
 			}
 			else if(this.lookAhead("endif"))
 			{
@@ -3071,7 +3124,7 @@ const parser = (function(){
 				return { "return":true,statements:[]};
 			}
 			else{
-				this.unexpected("#include #define #if #elif #else #endif #pragma");
+				this.unexpected("#include #define #if #elif #else #endif #pragma #error");
 			}
 			return { "return" :false,statements:statements};
 		}

@@ -5,7 +5,8 @@ const parser = require('./cparser');
 // ########################################################################################
 test('test skipBlanks with no leading spaces', () => {
   const result = (() => {
-    parser.setFile("a","main.c");
+	parser.initialize();
+	parser.setFile("a","main.c");
 	parser.skipBlanks(false);
 	return parser.currentCharacter;
   })();
@@ -14,6 +15,7 @@ test('test skipBlanks with no leading spaces', () => {
 
 test('test skipBlanks with leeding spaces', () => {
   const result = (() => {
+	parser.initialize();
     parser.setFile("    a","main.c");
 	parser.skipBlanks(false);
 	return parser.currentCharacter;
@@ -23,6 +25,7 @@ test('test skipBlanks with leeding spaces', () => {
 
 test('test skipBlanks with carriage return line feed', () => {
   const result = (() => {
+	parser.initialize();
     parser.setFile("\r\n\r\na","main.c");
 	parser.skipBlanks(false);
 	return parser.currentCharacter;
@@ -33,6 +36,7 @@ test('test skipBlanks with carriage return line feed', () => {
 
 test('test skipSpaces with no space',() => {
 	const result = (() => {
+		parser.initialize();
 		parser.setFile("12","main.c");
 		parser.next();
 		parser.skipSpaces();
@@ -43,6 +47,7 @@ test('test skipSpaces with no space',() => {
 
 test('test skipSpaces keepSpaces set to true with space',() => {
 	const result = (() => {
+		parser.initialize();
 		parser.setFile("1  2","main.c");
 		parser.next(true);
 		parser.skipSpaces(true);
@@ -53,6 +58,7 @@ test('test skipSpaces keepSpaces set to true with space',() => {
 
 test('test skipSpaces keepSpaces set to false with space',() => {
 	const result = (() => {
+		parser.initialize();
 		parser.setFile("1  2","main.c");
 		parser.next(false);
 		parser.skipSpaces(false);
@@ -66,6 +72,7 @@ test('test skipSpaces keepSpaces set to false with space',() => {
 
 test('test lookAhead', () => {
 	const result = (() => {
+		parser.initialize();
 		parser.setFile("#if\n","main.c");
 		return parser.lookAhead("#if");
 	})();
@@ -77,6 +84,7 @@ test('test lookAhead', () => {
 // ########################################################################################
 test('test consume', () => {
 	const result = (() => {
+		parser.initialize();
 		parser.setFile("#if 1","main.c");
 		parser.consume("#if");
 		parser.skipBlanks();
@@ -91,6 +99,7 @@ test('test consume', () => {
 
 test('test parseNumber 32bit binary 0',() => {
 	const result = (() => {
+		parser.initialize();
 		parser.setFile("0b00000000000000000000000000000000");
 		return parser.readNumber();
 	})();
@@ -99,6 +108,7 @@ test('test parseNumber 32bit binary 0',() => {
 
 test('test parseNumber 32 bit binary 1',() => {
 	const result = (() => {
+		parser.initialize();
 		parser.setFile("0b11111111111111111111111111111111");
 		return parser.readNumber();
 	})();
@@ -107,6 +117,7 @@ test('test parseNumber 32 bit binary 1',() => {
 
 test('test parseNumber 32bit octal 0',() => {
 	const result = (() => {
+		parser.initialize();
 		parser.setFile("00");
 		return parser.readNumber();
 	})();
@@ -115,6 +126,7 @@ test('test parseNumber 32bit octal 0',() => {
 
 test('test parseNumber 32 bit octal 0123',() => {
 	const result = (() => {
+		parser.initialize();
 		parser.setFile("0123");
 		return parser.readNumber();
 	})();
@@ -123,6 +135,7 @@ test('test parseNumber 32 bit octal 0123',() => {
 
 test('test parseNumber 32bit hex 0',() => {
 	const result = (() => {
+		parser.initialize();
 		parser.setFile("0x00000000");
 		return parser.readNumber();
 	})();
@@ -131,6 +144,7 @@ test('test parseNumber 32bit hex 0',() => {
 
 test('test parseNumber 32 bit hex 0xFEDCBA98',() => {
 	const result = (() => {
+		parser.initialize();
 		parser.setFile("0xFEDCBA98");
 		return parser.readNumber();
 	})();
@@ -139,6 +153,7 @@ test('test parseNumber 32 bit hex 0xFEDCBA98',() => {
 
 test('test parseNumber 32bit dec 0',() => {
 	const result = (() => {
+		parser.initialize();
 		parser.setFile("0");
 		return parser.readNumber();
 	})();
@@ -147,6 +162,7 @@ test('test parseNumber 32bit dec 0',() => {
 
 test('test parseNumber 32 bit dec 987654321',() => {
 	const result = (() => {
+		parser.initialize();
 		parser.setFile("987654321");
 		return parser.readNumber();
 	})();
@@ -160,6 +176,7 @@ test('test parseNumber 32 bit dec 987654321',() => {
 
 test('test parseString "test\\a\\b\\r\\n\\t"',() =>{
 	const result = (() => {
+		parser.initialize();
 		parser.setFile("\"test\\a\\b\\r\\n\\t\"","main.c");
 		return parser.readString();
 	})();
@@ -168,6 +185,7 @@ test('test parseString "test\\a\\b\\r\\n\\t"',() =>{
 
 test('test returnString "test\\a\\b\\r\\n\\t"',() =>{
 	const result = (() => {
+		parser.initialize();
 		return parser.returnString("test\a\b\r\n\t");
 	})();
 	expect(result).toStrictEqual("test\\a\\b\\r\\n\\t");
@@ -175,6 +193,7 @@ test('test returnString "test\\a\\b\\r\\n\\t"',() =>{
 
 test('test utf-8 string 0xf0 0x9f 0x98 0x83',() =>{
 	const result = (() => {
+		parser.initialize();
 		parser.setFile("\"test \\xf0\\x9f\\x98\\x83\"","main.c");
 		var string = parser.readString();
 		return string;
@@ -188,6 +207,7 @@ test('test utf-8 string 0xf0 0x9f 0x98 0x83',() =>{
 
 test('test parseStatement char a=\'a\';',() =>{
 	const result = (() => {
+		parser.initialize();
 		parser.setFile("char a='a';","main.c");
 		return parser.parseStatement();
 	})();
@@ -196,6 +216,7 @@ test('test parseStatement char a=\'a\';',() =>{
 
 test('test parseStatement char a=\'\\a\';',() =>{
 	const result = (() => {
+		parser.initialize();
 		parser.setFile("char  a='\\a';","main.c");
 		return parser.parseStatement();
 	})();
@@ -204,6 +225,7 @@ test('test parseStatement char a=\'\\a\';',() =>{
 
 test('test parseStatement char a=\'\\250\';',() =>{
 	const result = (() => {
+		parser.initialize();
 		parser.setFile("char  a='\\250';","main.c");
 		return parser.parseStatement();
 	})();
@@ -212,6 +234,7 @@ test('test parseStatement char a=\'\\250\';',() =>{
 
 test('test parseStatement char a=\'\\xA8\';',() =>{
 	const result = (() => {
+		parser.initialize();
 		parser.setFile("char  a='\\xA8';","main.c");
 		return parser.parseStatement();
 	})();
@@ -220,6 +243,7 @@ test('test parseStatement char a=\'\\xA8\';',() =>{
 
 test('test parseStatement char a=\'\\u2654\';',() =>{
 	const result = (() => {
+		parser.initialize();
 		parser.setFile("char  a='\\u2654';","main.c");
 		return parser.parseStatement();
 	})();
@@ -228,6 +252,7 @@ test('test parseStatement char a=\'\\u2654\';',() =>{
 
 test('test parseStatement char a=\'\\U0001F600\';',() =>{
 	const result = (() => {
+		parser.initialize();
 		parser.setFile("char  a='\\U0001F600';","main.c");
 		return parser.parseStatement();
 	})();
@@ -240,6 +265,7 @@ test('test parseStatement char a=\'\\U0001F600\';',() =>{
 
 test('test parsing enumeration enum e_one{one_value};',() =>{
 	const result = (() => {
+		parser.initialize();
 		parser.setFile("enum e_one{one_value};","main.c");
 		return parser.internalParse();
 	})();
@@ -248,6 +274,7 @@ test('test parsing enumeration enum e_one{one_value};',() =>{
 
 test('test parsing enumeration enum e_two{one_value};',() =>{
 	const result = (() => {
+		parser.initialize();
 		var stringContent="enum e_two{e1_v,e2_v,e3_v,e4_v,e5_v,e6_v,e7_v,e8_v,e9_v,\n";
 		stringContent += "e10_v,e11_v,e12_v,e13_v,e14_v,e15_v,e16_v,e17_v,e18_v,e19_v,\n";
 		stringContent += "e20_v,e21_v,e22_v,e23_v,e24_v,e25_v,e26_v,e27_v,e28_v,e29_v,\n";
@@ -471,43 +498,91 @@ test('test parsing enumeration enum e_two{one_value};',() =>{
 // ########################################################################################
 test('test parsing struct st_one{char a; unsigned char b; short c;unsigned short d;int e;unsigned int f; long g; unsigned long h; long long i; unsigned long j; float k; double l;};',() =>{
 	const result = (() => {
-		parser.setFile("struct st_one{char a; unsigned char b; short c;unsigned short d;int e;unsigned int f; long g; unsigned long h; long long i; unsigned long j; float k; double l;};","main.c");
+		parser.initialize();
+		parser.setFile("struct st_one{char a; unsigned char b; short c;unsigned short d;int e;unsigned int f; long g; unsigned long h; long long i; unsigned long long j; float k; double l;};","main.c");
 		return parser.internalParse();
 	})();
-	expect(result).toStrictEqual([{"member":[{"defType": {"modifier": [],"name": "char","pos": 14,"type": "Type",},"name": "a","pos": 14,"type": "Definition",},{"defType": {"modifier": ["unsigned",],"name": "char","pos": 22,"type": "Type",},"name": "b","pos": 22,"type": "Definition",},{"defType": {"modifier": [],"name": "short","pos": 39,"type": "Type",},"name": "c","pos": 39,"type": "Definition",},{"defType": {"modifier": ["unsigned",],"name": "short","pos": 47,"type": "Type",},"name": "d","pos": 47,"type": "Definition",},{"defType": {"modifier": [],"name": "int","pos": 64,"type": "Type",},"name": "e","pos": 64,"type": "Definition",},{"defType": {"modifier": ["unsigned",],"name": "int","pos": 70,"type": "Type",},"name": "f","pos": 70,"type": "Definition",},{"defType": {"modifier": [],"name": "long","pos": 86,"type": "Type",},"name": "g","pos": 86,"type": "Definition",},{"defType": {"modifier": ["unsigned",],"name": "long","pos": 94,"type": "Type",},"name": "h","pos": 94,"type": "Definition",},{"defType": {"modifier": [],"name": "long","pos": 111,"type": "Type",},"name": "i","pos": 111,"type": "Definition",},{"defType": {"modifier": ["unsigned",],"name": "long","pos": 124,"type": "Type",},"name": "j","pos": 124,"type": "Definition",},{"defType": {"modifier": [],"name": "float","pos": 141,"type": "Type",},"name": "k","pos": 141,"type": "Definition",},{"defType": {"modifier": [],"name": "double","pos": 150,"type": "Type",},"name": "l","pos": 150,"type": "Definition",},],"memberNames": ["a","b","c","d","e","f","g","h","i","j","k","l",],"name": "st_one","pos": 0,"type": "EnumDefinition","type": "StructDefinition",},]);
+	expect(result).toStrictEqual([{"member":[{"defType": {"modifier": [],"name": "char","pos": 14,"type": "Type",},"name": "a","pos": 14,"type": "Definition",},{"defType": {"modifier": ["unsigned",],"name": "char","pos": 22,"type": "Type",},"name": "b","pos": 22,"type": "Definition",},{"defType": {"modifier": [],"name": "short","pos": 39,"type": "Type",},"name": "c","pos": 39,"type": "Definition",},{"defType": {"modifier": ["unsigned",],"name": "short","pos": 47,"type": "Type",},"name": "d","pos": 47,"type": "Definition",},{"defType": {"modifier": [],"name": "int","pos": 64,"type": "Type",},"name": "e","pos": 64,"type": "Definition",},{"defType": {"modifier": ["unsigned",],"name": "int","pos": 70,"type": "Type",},"name": "f","pos": 70,"type": "Definition",},{"defType": {"modifier": [],"name": "long","pos": 86,"type": "Type",},"name": "g","pos": 86,"type": "Definition",},{"defType": {"modifier": ["unsigned",],"name": "long","pos": 94,"type": "Type",},"name": "h","pos": 94,"type": "Definition",},{"defType": {"modifier": ["long"],"name": "long","pos": 111,"type": "Type",},"name": "i","pos": 111,"type": "Definition",},{"defType": {"modifier": ["unsigned","long"],"name": "long","pos": 124,"type": "Type",},"name": "j","pos": 124,"type": "Definition",},{"defType": {"modifier": [],"name": "float","pos": 146,"type": "Type",},"name": "k","pos": 146,"type": "Definition",},{"defType": {"modifier": [],"name": "double","pos": 155,"type": "Type",},"name": "l","pos": 155,"type": "Definition",},],"memberNames": ["a","b","c","d","e","f","g","h","i","j","k","l",],"name": "st_one","pos": 0,"type": "EnumDefinition","type": "StructDefinition",},]);
 });
 // ########################################################################################
 // Test Unions
 // ########################################################################################
-
+test('test parsing union u_one{char a; unsigned char b; short c;unsigned short d;int e;unsigned int f; long g; unsigned long h; long long i; unsigned long j; float k; double l;};',() =>{
+	const result = (() => {
+		parser.initialize();
+		parser.setFile("union u_one{char a; unsigned char b; short c;unsigned short d;int e;unsigned int f; long g; unsigned long h; long long i; unsigned long long j; float k; double l;};","main.c");
+		return parser.internalParse();
+	})();
+	expect(result).toStrictEqual([{"member": [{"defType": {"modifier": [],"name": "char","pos": 12,"type": "Type",},"name": "a","pos": 12,"type": "Definition",},{"defType": {"modifier": ["unsigned",],"name": "char","pos": 20,"type": "Type",},"name": "b","pos": 20,"type": "Definition",},{"defType": {"modifier": [],"name": "short","pos": 37,"type": "Type",},"name": "c","pos": 37,"type": "Definition",},{"defType": {"modifier": ["unsigned",],"name": "short","pos": 45,"type": "Type",},"name": "d","pos": 45,"type": "Definition",},{"defType": {"modifier": [],"name": "int","pos": 62,"type": "Type",},"name": "e","pos": 62,"type": "Definition",},{"defType": {"modifier": ["unsigned",],"name": "int","pos": 68,"type": "Type",},"name": "f","pos": 68,"type": "Definition",},{"defType": {"modifier": [],"name": "long","pos": 84,"type": "Type",},"name": "g","pos": 84,"type": "Definition",},{"defType": {"modifier": ["unsigned",],"name": "long","pos": 92,"type": "Type",},"name": "h","pos": 92,"type": "Definition",},{"defType": {"modifier": ["long",],"name": "long","pos": 109,"type": "Type",},"name": "i","pos": 109,"type": "Definition",},{"defType": {"modifier": ["unsigned","long",],"name": "long","pos": 122,"type": "Type",},"name": "j","pos": 122,"type": "Definition",},{"defType": {"modifier": [],"name": "float","pos": 144,"type": "Type",},"name": "k","pos": 144,"type": "Definition",},{"defType": {"modifier": [],"name": "double","pos": 153,"type": "Type",},"name": "l","pos": 153,"type": "Definition",},],"memberNames": ["a","b","c","d","e","f","g","h","i","j","k","l",],"name": "u_one","pos": 0,"type": "UnionDefinition","typeNames": ["char","unsigned char","short","unsigned short","int","unsigned int","long","unsigned long","long long","unsigned long long","float","double",],},]);
+});
 // ########################################################################################
 // Test Switch/Case Statement
 // ########################################################################################
-
+test('test parsing int index=0;switch(index){ case 0: };',() =>{
+	const result = (() => {
+		parser.initialize();
+		parser.setFile("void main(){int index=0;switch(index){ case 0: };return;}","main.c");
+		return parser.internalParse();
+	})();
+	expect(result).toStrictEqual([{"arguments":  [],"body":  [{"defType":  {"modifier":  [],"name": "int","pos": 12,"type": "Type",},"name": "index","pos": 12,"type": "VariableDeclaration","value":  {"literalType": "Number","pos": 22,"type": "Literal","value":  {"numberType": "base10Integer","value": 0,},},},{"body":  {"conditions":  [],"pos": 37,"type": "SwitchStatement",},"identifier": "index","pos": 24,"type": "SwitchStatement",},{"expression": undefined,"pos": 48,"type": "ExpressionStatement",},{"pos": 49,"type": "ReturnStatement","value": undefined,}],"defType":  {"modifier":  [],"name": "void","pos": 0,"type": "Type",},"name": "main","pos": 0,"type": "FunctionDefinition",},]);
+});
 // ########################################################################################
 // Test while Statemet
 // ########################################################################################
-
+test('test while loop',() =>{
+	const result = (() => {
+		parser.initialize();
+		parser.setFile("void main(){while(true){printf(\"Hello World\");}return;}","main.c");
+		return parser.internalParse();
+	})();
+	expect(result).toStrictEqual([{"arguments":  [],"body":  [{"body":  [{"expression":  {"arguments":  [{"literalType": "String","pos": 31,"type": "Literal","value": "Hello World",},],"base":  {"type": "Identifier","value": "printf",},"pos": 24,"type": "CallExpression",},"pos": 24,"type": "ExpressionStatement",},],"condition":  {"pos": 18,"type": "Identifier","value": "true",},"pos": 12,"type": "WhileStatement",},{"pos": 47,"type": "ReturnStatement","value": undefined,},],"defType":  {"modifier":  [],"name": "void","pos": 0,"type": "Type",},"name": "main","pos": 0,"type": "FunctionDefinition",},]);
+});
 // ########################################################################################
 // Test Do While Statement
 // ########################################################################################
-
+test('test do while loop',() =>{
+	const result = (() => {
+		parser.initialize();
+		parser.setFile("void main(){do{printf(\"Hello World\");}while(true);return;}","main.c");
+		return parser.internalParse();
+		
+	})();
+	console.log("Result:[",result,"]");
+	expect(result).toStrictEqual([{"arguments":  [],"body":  [{"body":  [{"expression":  {"arguments":  [{"literalType": "String","pos": 22,"type": "Literal","value": "Hello World",},],"base":  {"type": "Identifier","value": "printf",},"pos": 15,"type": "CallExpression",},"pos": 15,"type": "ExpressionStatement",},],"condition":  {"pos": 44,"type": "Identifier","value": "true",},"pos": 12,"type": "DoWhileStatement",},{"pos": 50,"type": "ReturnStatement","value": undefined,},],"defType":  {"modifier":  [],"name": "void","pos": 0,"type": "Type",},"name": "main","pos": 0,"type": "FunctionDefinition",},]);
+});
 // ########################################################################################
 // Test for Statement
 // ########################################################################################
+test('test for loop',() =>{
+	const result = (() => {
+		parser.initialize();
+	parser.setFile("void main(){for(int index=0;index<10;index++;}{printf(\"Hello World\n\");}return;}","main.c");
+		return parser.internalParse();
+	})();
+	expect(result).toStrictEqual([]);
+});
+
+
+// ########################################################################################
+// Basic Parsing Statement
+// ########################################################################################
 test('test basic parse', () => {
+	parser.initialize();
   expect(parser.parse("void main(){}","main.c")).toStrictEqual([{"arguments": [], "body": [], "defType": {"modifier": [], "name": "void", "pos": 0, "type": "Type"}, "name": "main", "pos": 0, "type": "FunctionDefinition"}]);
 });
 
 test('test basic with return',()=>{
+	parser.initialize();
 	expect(parser.parse("void main(){return;}")).toStrictEqual([{"arguments":[],"body":[],"body":[{"pos": 12,"type": "ReturnStatement","value": undefined}],"defType":{"modifier":[],"name": "void","pos": 0,"type": "Type"},"name": "main","pos": 0,"type": "FunctionDefinition"}]);
 });
 
 test('test basic with return',()=>{
+	parser.initialize();
 	expect(parser.parse("void main(){return;}")).toStrictEqual([{"arguments":[],"body":[],"body":[{"pos": 12,"type": "ReturnStatement","value": undefined}],"defType":{"modifier":[],"name": "void","pos": 0,"type": "Type"},"name": "main","pos": 0,"type": "FunctionDefinition"}]);
 });
 
 test('test basic with return',()=>{
+	parser.initialize();
 	expect(parser.parse("void main(){return;}")).toStrictEqual([{"arguments":[],"body":[],"body":[{"pos": 12,"type": "ReturnStatement","value": undefined}],"defType":{"modifier":[],"name": "void","pos": 0,"type": "Type"},"name": "main","pos": 0,"type": "FunctionDefinition"}]);
 });
 

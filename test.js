@@ -556,11 +556,34 @@ test('test do while loop',() =>{
 test('test for loop',() =>{
 	const result = (() => {
 		parser.initialize();
-	parser.setFile("void main(){for(int index=0;index<10;index++;}{printf(\"Hello World\n\");}return;}","main.c");
+	parser.setFile("void main(){for(int index=0;index<10;index++){printf(\"Hello World\");}return;}","main.c");
 		return parser.internalParse();
 	})();
-	expect(result).toStrictEqual([]);
+	expect(result).toStrictEqual([{"arguments":  [],"body":  [{"body":  [{"expression":  {"arguments":  [{"literalType": "String","pos": 53,"type": "Literal","value": "Hello World",},],"base":  {"type": "Identifier","value": "printf",},"pos": 46,"type": "CallExpression",},"pos": 46,"type": "ExpressionStatement",},],"condition":  {"left":  {"pos": 28,"type": "Identifier","value": "index",},"operator": "<","pos": 33,"right":  {"literalType": "Number","pos": 34,"type": "Literal","value":  {"numberType": "base10Integer","value": 10,},},"type": "BinaryExpression",},"init":  {"defType":  {"modifier":  [],"name": "int","pos": 16,"type": "Type",},"name": "index","pos": 16,"type": "VariableDeclaration","value":  {"literalType": "Number","pos": 26,"type": "Literal","value":  {"numberType": "base10Integer","value": 0,},},},"pos": 12,"step":  {"operator": "++","pos": 42,"type": "SuffixExpression","value":  {"pos": 37,"type": "Identifier","value": "index",},},"type": "ForStatement",},{"pos": 69,"type": "ReturnStatement","value": undefined,},],"defType":  {"modifier":  [],"name": "void","pos": 0,"type": "Type",},"name": "main","pos": 0,"type": "FunctionDefinition",},]);
 });
+
+test('test for loop variation 1',() =>{
+	const result = (() => {
+		parser.initialize();
+	parser.setFile("void main(){int index=0;for(;index<10;index++){printf(\"Hello World\");}return;}","main.c");
+		return parser.internalParse();
+	})();
+	expect(result).toStrictEqual([{"arguments": [], "body": [{"defType": {"modifier": [], "name": "int", "pos": 12, "type": "Type"}, "name": "index", "pos": 12, "type": "VariableDeclaration", "value": {"literalType": "Number", "pos": 22, "type": "Literal", "value": {"numberType": "base10Integer", "value": 0}}}, {"body": [{"expression": {"arguments": [{"literalType": "String", "pos": 54, "type": "Literal", "value": "Hello World"}], "base": {"type": "Identifier", "value": "printf"}, "pos": 47, "type": "CallExpression"}, "pos": 47, "type": "ExpressionStatement"}], "condition": {"left": {"pos": 29, "type": "Identifier", "value": "index"}, "operator": "<", "pos": 34, "right": {"literalType": "Number", "pos": 35, "type": "Literal", "value": {"numberType": "base10Integer", "value": 10}}, "type": "BinaryExpression"}, "init": {"expression": undefined, "pos": 28, "type": "ExpressionStatement"}, "pos": 24, "step": {"operator": "++", "pos": 43, "type": "SuffixExpression", "value": {"pos": 38, "type": "Identifier", "value": "index"}}, "type": "ForStatement"}, {"pos": 70, "type": "ReturnStatement", "value": undefined}], "defType": {"modifier": [], "name": "void", "pos": 0, "type": "Type"}, "name": "main", "pos": 0, "type": "FunctionDefinition"}]);
+});
+
+test('test for loop variation 2',() =>{
+	const result = (() => {
+		parser.initialize();
+	parser.setFile("void main(){int index=0;for(index=0;index<10;index++){printf(\"Hello World\");}return;}","main.c");
+		return parser.internalParse();
+	})();
+	expect(result).toStrictEqual([{"arguments": [], "body": [{"defType": {"modifier": [], "name": "int", "pos": 12, "type": "Type"}, "name": "index", "pos": 12, "type": "VariableDeclaration", "value": {"literalType": "Number", "pos": 22, "type": "Literal", "value": {"numberType": "base10Integer", "value": 0}}}, {"body": [{"expression": {"arguments": [{"literalType": "String", "pos": 61, "type": "Literal", "value": "Hello World"}], "base": {"type": "Identifier", "value": "printf"}, "pos": 54, "type": "CallExpression"}, "pos": 54, "type": "ExpressionStatement"}], "condition": {"left": {"pos": 36, "type": "Identifier", "value": "index"}, "operator": "<", "pos": 41, "right": {"literalType": "Number", "pos": 42, "type": "Literal", "value": {"numberType": "base10Integer", "value": 10}}, "type": "BinaryExpression"}, "init": {"expression": {"left": {"pos": 28, "type": "Identifier", "value": "index"}, "operator": "=", "pos": 33, "right": {"literalType": "Number", "pos": 34, "type": "Literal", "value": {"numberType": "base10Integer", "value": 0}}, "type": "BinaryExpression"}, "pos": 28, "type": "ExpressionStatement"}, "pos": 24, "step": {"operator": "++", "pos": 50, "type": "SuffixExpression", "value": {"pos": 45, "type": "Identifier", "value": "index"}}, "type": "ForStatement"}, {"pos": 77, "type": "ReturnStatement", "value": undefined}], "defType": {"modifier": [], "name": "void", "pos": 0, "type": "Type"}, "name": "main", "pos": 0, "type": "FunctionDefinition"}]);
+});
+
+// ########################################################################################
+// Test typedef statement
+// ########################################################################################
+
 
 
 // ########################################################################################
@@ -585,5 +608,6 @@ test('test basic with return',()=>{
 	parser.initialize();
 	expect(parser.parse("void main(){return;}")).toStrictEqual([{"arguments":[],"body":[],"body":[{"pos": 12,"type": "ReturnStatement","value": undefined}],"defType":{"modifier":[],"name": "void","pos": 0,"type": "Type"},"name": "main","pos": 0,"type": "FunctionDefinition"}]);
 });
+
 
 

@@ -1,4 +1,4 @@
-7const path = require('node:path/win32');
+const path = require('node:path/win32');
 const fs = require('fs');
 const { it } = require('node:test');
 
@@ -536,7 +536,7 @@ IMAGE_SCN_ALIGN_64BYTES:0x00700000,//Align data on a 64-byte boundary. Valid onl
 IMAGE_SCN_ALIGN_128BYTES:0x00800000,//Align data on a 128-byte boundary. Valid only for object files.
 IMAGE_SCN_ALIGN_256BYTES:0x00900000,//Align data on a 256-byte boundary. Valid only for object files.
 IMAGE_SCN_ALIGN_512BYTES:0x00A00000,//Align data on a 512-byte boundary. Valid only for object files.
-IMAGE_SCN_ALIGN_1024BYTES::0x00B00000,//Align data on a 1024-byte boundary. Valid only for object files.
+IMAGE_SCN_ALIGN_1024BYTES:0x00B00000,//Align data on a 1024-byte boundary. Valid only for object files.
 IMAGE_SCN_ALIGN_2048BYTES:0x00C00000,//Align data on a 2048-byte boundary. Valid only for object files.
 IMAGE_SCN_ALIGN_4096BYTES:0x00D00000,//Align data on a 4096-byte boundary. Valid only for object files.
 IMAGE_SCN_ALIGN_8192BYTES:0x00E00000,//Align data on an 8192-byte boundary. Valid only for object files.

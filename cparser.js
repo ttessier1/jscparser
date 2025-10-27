@@ -1,5 +1,6 @@
-const path = require('node:path/win32');
+7const path = require('node:path/win32');
 const fs = require('fs');
+const { it } = require('node:test');
 
 const types = [
 	"void",
@@ -288,6 +289,265 @@ const builtins = {
 		"__VERSION__":"compiler version",
 		"__BUILD__":"compiler build",
 		
+};
+
+let coff_file = {
+	Machine:0x0000,
+	NumberOfSection:0x0000,
+	TimeDateStamp:0x00000000,
+	PointerToSymbolTable:0x0000000,
+	NumberOfSymbols:0x00000000,
+	SizeOfOptionalHeader:0x0000,
+	Characteristics:0x0000
+};
+
+let image_file_type = {
+	IMAGE_FILE_MACHINE_UNKNOWN:     0x0000,
+	IMAGE_FILE_MACHINE_ALPHA:       0x0184,
+	IMAGE_FILE_MACHINE_ALPHA64:     0x0284,
+	IMAGE_FILE_MACHINE_AM33:        0x01d3,
+	IMAGE_FILE_MACHINE_AMD64:       0x8664,
+	IMAGE_FILE_MACHINE_ARM:         0x01c0,
+	IMAGE_FILE_MACHINE_ARM64:       0xaa64,
+	IMAGE_FILE_MACHINE_ARM64EC:     0xA641,
+	IMAGE_FILE_MACHINE_ARM64X:      0xA64E,
+	IMAGE_FILE_MACHINE_ARMNT:       0x01c4,
+	IMAGE_FILE_MACHINE_AXP64:       0x0284,
+	IMAGE_FILE_MACHINE_EBC:         0x0Ebc,
+	IMAGE_FILE_MACHINE_I386:        0x014c,
+	IMAGE_FILE_MACHINE_IA64:        0x0200,
+	IMAGE_FILE_MACHINE_LOONGARCH32: 0x6232,
+	IMAGE_FILE_MACHINE_LOONGARCH64: 0x6264,
+	IMAGE_FILE_MACHINE_M32R:        0x9041,
+	IMAGE_FILE_MACHINE_MIPS16:      0x0266,
+	IMAGE_FILE_MACHINE_MIPSFPU:     0x0366,
+	IMAGE_FILE_MACHINE_MIPSFPU16:   0x0466,
+	IMAGE_FILE_MACHINE_POWERPC:     0x01F0,
+	IMAGE_FILE_MACHINE_POWERPCFP:   0x01F1,
+	IMAGE_FILE_MACHINE_R3000BE:     0x0160,
+	IMAGE_FILE_MACHINE_R3000:       0x0162,
+	IMAGE_FILE_MACHINE_R4000:		0x0166,
+	IMAGE_FILE_MACHINE_R10000:      0x0168,
+	IMAGE_FILE_MACHINE_RISCV32:     0x5032,
+	IMAGE_FILE_MACHINE_RISCV64:     0x5064,
+	IMAGE_FILE_MACHINE_RISCV128:    0x5128,
+	IMAGE_FILE_MACHINE_SH3:         0x01a2,
+	IMAGE_FILE_MACHINE_SH3DSP:      0x01a3,
+	IMAGE_FILE_MACHINE_SH4:         0x01a6,
+	IMAGE_FILE_MACHINE_SH5:         0x01a8,
+	IMAGE_FILE_MACHINE_THUMB:       0x01c2,
+	IMAGE_FILE_MACHINE_WCEMIPSV2:   0x0169,
+};
+
+let characteristics = {
+	IMAGE_FILE_RELOCS_STRIPPED:         0x0001,
+	IMAGE_FILE_EXECUTABLE_IMAGE:        0x0002,
+	IMAGE_FILE_LINE_NUMS_STRIPPED:      0x0004,
+	IMAGE_FILE_LOCAL_SYMS_STRIPPED:     0x0008,
+	IMAGE_FILE_AGGRESSIVE_WS_TRIM:      0x0010,
+	IMAGE_FILE_LARGE_ADDRESS_AWARE:     0x0020,
+	IMAGE_FLAG_UNUSED:                  0x0040,
+	IMAGE_FILE_BYTES_REVERSED_LO:       0x0080,
+	IMAGE_FILE_32BIT_MACHINE:           0x0100,
+	IMAGE_FILE_DEBUG_STRIPPED:          0x0200,
+	IMAGE_FILE_REMOVABLE_RUN_FROM_SWAP: 0x0400,
+	IMAGE_FILE_NET_RUN_FROM_SWAP:       0x0800,
+	IMAGE_FILE_SYSTEM:                  0x1000,
+	IMAGE_FILE_DLL:                     0x2000,
+	IMAGE_FILE_UP_SYSTEM_ONLY:          0x4000,
+	IMAGE_FILE_BYTES_REVERSED_HI:       0x8000,
+};
+
+let OptionalHeaderStandar = {
+	Magic: 0x0000, // 0x10B PE32 bit executable 0x107 ROM 0x20B PE32+
+	MajorLinkerVersion:0x00,
+	MinorLinkerVersion:0x00,
+	SizeOfCode:0x00000000,
+	SizeOfInitializedData:0x00000000,
+	SizeOfUnInitializedData:0x00000000,
+	AddressOfentryPoint:0x00000000,
+	BaseOfCode:0x00000000,
+	BaseOfData:0x00000000, // PE32 only
+};
+
+let OptionalWindowsSpecificPE32 = {
+	ImageBase: 0x00000000,
+	SetionAlignment:0x00000000,
+	FileAlignment:0x00000000,
+	MajorOperatingSystemVersion:0x0000,
+	MinorOperatingSystemVersion:0x0000,
+	MajorImageVersion:0x0000,
+	MinorImageVersion:0x0000,
+	MajorSubsystemVersion:0x0000,
+	MinorSubsystemVersion:0x0000,
+	Win32VersionValue:0x00000000,
+	SizeOfImage:0x00000000,
+	SizeOfHeaders:0x00000000,
+	CheckSum:0x00000000,
+	SubSystem:0x0000,
+	DllCharacteristics:0x0000,
+	SizeOfStackReserve:0x00000000,
+	SizeOfStackCommit:0x00000000,
+	SizeOfHeapReserve:0x00000000,
+	SizeOfHeapCommit:0x00000000,
+	LoaderFlags:0x00000000,
+	NumberOfRvaAndSizes:0x00000000,
+
+	ExportTable:0x0000000000000000,
+	ImportTable:0x0000000000000000,
+	ResourceTable:0x0000000000000000,
+	Exceptiontable:0x0000000000000000,
+	CertificateTable:0x0000000000000000,
+	BaseRelocationTable:0x0000000000000000,
+	DebugTable:0x0000000000000000,
+	ArchitectureTable:0x0000000000000000,
+	GlobalPtrTable:0x0000000000000000,
+	TlsTable:0x0000000000000000,
+	LoadConfigTable:0x0000000000000000,
+	BoundImporTable:0x0000000000000000,
+	IATTable:0x0000000000000000,
+	DelayImportDescriptor:0x0000000000000000,
+	CLRRuntime:0x0000000000000000,
+	Reserved:0x0000000000000000
+
+};
+
+let OptionalWindowsSpecificPE32Plus = {
+	ImageBase: 0x0000000000000000,
+	SetionAlignment:0x00000000,
+	FileAlignment:0x00000000,
+	MajorOperatingSystemVersion:0x0000,
+	MinorOperatingSystemVersion:0x0000,
+	MajorImageVersion:0x0000,
+	MinorImageVersion:0x0000,
+	MajorSubsystemVersion:0x0000,
+	MinorSubsystemVersion:0x0000,
+	Win32VersionValue:0x00000000,
+	SizeOfImage:0x00000000,
+	SizeOfHeaders:0x00000000,
+	CheckSum:0x00000000,
+	SubSystem:0x0000,
+	DllCharacteristics:0x0000,
+	SizeOfStackReserve:0x0000000000000000,
+	SizeOfStackCommit:0x0000000000000000,
+	SizeOfHeapReserve:0x0000000000000000,
+	SizeOfHeapCommit:0x0000000000000000,
+	LoaderFlags:0x00000000,
+	NumberOfRvaAndSizes:0x00000000,
+
+	ExportTable:0x0000000000000000,
+	ImportTable:0x0000000000000000,
+	ResourceTable:0x0000000000000000,
+	Exceptiontable:0x0000000000000000,
+	CertificateTable:0x0000000000000000,
+	BaseRelocationTable:0x0000000000000000,
+	DebugTable:0x0000000000000000,
+	ArchitectureTable:0x0000000000000000,
+	GlobalPtrTable:0x0000000000000000,
+	TlsTable:0x0000000000000000,
+	LoadConfigTable:0x0000000000000000,
+	BoundImporTable:0x0000000000000000,
+	IATTable:0x0000000000000000,
+	DelayImportDescriptor:0x0000000000000000,
+	CLRRuntime:0x0000000000000000,
+	Reserved:0x0000000000000000
+};
+
+let WindowsSubSystem = {
+IMAGE_SUBSYSTEM_UNKNOWN:0,
+IMAGE_SUBSYSTEM_NATIVE:1,
+IMAGE_SUBSYSTEM_WINDOWS_GUI:2,
+IMAGE_SUBSYSTEM_WINDOWS_CUI:3,
+IMAGE_SUBSYSTEM_OS2_CUI:5,
+IMAGE_SUBSYSTEM_POSIX_CUI:7,
+IMAGE_SUBSYSTEM_NATIVE_WINDOWS:8,
+IMAGE_SUBSYSTEM_WINDOWS_CE_GUI:9,
+IMAGE_SUBSYSTEM_EFI_APPLICATION:10,
+IMAGE_SUBSYSTEM_EFI_BOOT_SERVICE_DRIVER:11,
+IMAGE_SUBSYSTEM_EFI_RUNTIME_DRIVER:12,
+IMAGE_SUBSYSTEM_EFI_ROM:13,
+IMAGE_SUBSYSTEM_XBOX:14,
+IMAGE_SUBSYSTEM_WINDOWS_BOOT_APPLICATION:16
+};
+
+let DosCharacteristics ={
+Reserver1:                                      0x0001,
+Reserved2:                                      0x0002,
+Reserver3:                                      0x0004,
+Reserved4:                                      0x0008,
+IMAGE_DLLCHARACTERISTICS_HIGH_ENTROPY_VA:       0x0020,
+IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE:          0x0040,
+IMAGE_DLLCHARACTERISTICS_FORCE_INTEGRITY:       0x0080,
+IMAGE_DLLCHARACTERISTICS_NX_COMPAT:             0x0100,
+IMAGE_DLLCHARACTERISTICS_NO_ISOLATION:          0x0200,
+IMAGE_DLLCHARACTERISTICS_NO_SEH:                0x0400,
+IMAGE_DLLCHARACTERISTICS_NO_BIND:               0x0800,
+IMAGE_DLLCHARACTERISTICS_APPCONTAINER:          0x1000,
+IMAGE_DLLCHARACTERISTICS_WDM_DRIVER:            0x2000,
+IMAGE_DLLCHARACTERISTICS_GUARD_CF:              0x4000,
+IMAGE_DLLCHARACTERISTICS_TERMINAL_SERVER_AWARE: 0x8000,
+};
+
+let DataDirectory = {
+VirtualAddress:   0x00000000,
+Size:             0x00000000,
+};
+
+let SectionTable = {
+	Name: 0x00000000,
+	VirtualSize:0x00000000,
+	VirtualAddress:0x00000000,
+	SizeOfRawData:0x00000000,
+	PointerToRawData:0x00000000,
+	PointerToRelocations:0x00000000,
+	PointerToLineNumbers:0x00000000,
+	NumberOfRelocations:0x0000,
+	NumberOfLineNumbers:0x0000,
+	Characteristics:0x00000000,
+};
+
+let SectionFlags = {
+Reserved1:0x00000000,
+Reserved2:0x00000001,
+Reserved3:0x00000002,
+Reserved4:0x00000004,
+IMAGE_SCN_TYPE_NO_PAD:0x00000008,
+Reserved5:0x00000010,
+IMAGE_SCN_CNT_CODE:0x00000020, //The section contains executable code.
+IMAGE_SCN_CNT_INITIALIZED_DATA:0x00000040,//The section contains initialized data.
+IMAGE_SCN_CNT_UNINITIALIZED_DATA:0x00000080,// The section contains uninitialized data.
+IMAGE_SCN_LNK_OTHER:0x00000100,//Reserved for future use.
+IMAGE_SCN_LNK_INFO:0x00000200,//The section contains comments or other information. The .drectve section has this type. This is valid for object files only.
+Reserved6:0x00000400,//Reserved for future use.
+IMAGE_SCN_LNK_REMOVE:0x00000800,//The section will not become part of the image. This is valid only for object files.
+IMAGE_SCN_LNK_COMDAT:0x00001000,//The section contains COMDAT data. For more information, see COMDAT Sections (Object Only). This is valid only for object files.
+IMAGE_SCN_GPREL:0x00008000,//The section contains data referenced through the global pointer (GP).
+IMAGE_SCN_MEM_PURGEABLE:0x00020000,//Reserved for future use.
+IMAGE_SCN_MEM_16BIT:0x00020000,//Reserved for future use.
+IMAGE_SCN_MEM_LOCKED:0x00040000,//Reserved for future use.
+IMAGE_SCN_MEM_PRELOAD:0x00080000,//Reserved for future use.
+IMAGE_SCN_ALIGN_1BYTES:0x00100000,//Align data on a 1-byte boundary. Valid only for object files.
+IMAGE_SCN_ALIGN_2BYTES:0x00200000,//Align data on a 2-byte boundary. Valid only for object files.
+IMAGE_SCN_ALIGN_4BYTES:0x00300000,//Align data on a 4-byte boundary. Valid only for object files.
+IMAGE_SCN_ALIGN_8BYTES:0x00400000,//Align data on an 8-byte boundary. Valid only for object files.
+IMAGE_SCN_ALIGN_16BYTES:0x00500000,//Align data on a 16-byte boundary. Valid only for object files.
+IMAGE_SCN_ALIGN_32BYTES:0x00600000,//Align data on a 32-byte boundary. Valid only for object files.
+IMAGE_SCN_ALIGN_64BYTES:0x00700000,//Align data on a 64-byte boundary. Valid only for object files.
+IMAGE_SCN_ALIGN_128BYTES:0x00800000,//Align data on a 128-byte boundary. Valid only for object files.
+IMAGE_SCN_ALIGN_256BYTES:0x00900000,//Align data on a 256-byte boundary. Valid only for object files.
+IMAGE_SCN_ALIGN_512BYTES:0x00A00000,//Align data on a 512-byte boundary. Valid only for object files.
+IMAGE_SCN_ALIGN_1024BYTES::0x00B00000,//Align data on a 1024-byte boundary. Valid only for object files.
+IMAGE_SCN_ALIGN_2048BYTES:0x00C00000,//Align data on a 2048-byte boundary. Valid only for object files.
+IMAGE_SCN_ALIGN_4096BYTES:0x00D00000,//Align data on a 4096-byte boundary. Valid only for object files.
+IMAGE_SCN_ALIGN_8192BYTES:0x00E00000,//Align data on an 8192-byte boundary. Valid only for object files.
+IMAGE_SCN_LNK_NRELOC_OVFL:0x01000000,//The section contains extended relocations.
+IMAGE_SCN_MEM_DISCARDABLE:0x02000000,//The section can be discarded as needed.
+IMAGE_SCN_MEM_NOT_CACHED:0x04000000,//The section cannot be cached.
+IMAGE_SCN_MEM_NOT_PAGED:0x08000000,//The section is not pageable.
+IMAGE_SCN_MEM_SHARED:0x10000000,//The section can be shared in memory.
+IMAGE_SCN_MEM_EXECUTE:0x20000000,//The section can be executed as code.
+IMAGE_SCN_MEM_READ:0x40000000,//The section can be read.
+IMAGE_SCN_MEM_WRITE:0x80000000,//The section can be written to.
 };
 
 //const identifier = identifier_nondigit||identifier identifier_nondigit||identifier digit;
@@ -3144,11 +3404,7 @@ const parser = (function(){
 				}
 				else
 				{
-					this.unexpected("Number");
-				}
-				while(this.currentCharacter!="\n")
-				{
-					this.next();
+					this.unexpected("Number or Defined");
 				}
 
 			}
@@ -3156,37 +3412,64 @@ const parser = (function(){
 			{
 				this.poundIfLevel++;
 				var number=0;
+				var invertResult=false;
+				if(this.lookAhead("!"))
+				{
+					invertResult=true;
+				}
 				if(this.numberIncoming())
 				{
 					number = this.readNumber();
-					if(number.numberType=="base10Integer" && number.value == 0)
+					if(number.numberType=="base10Integer" && number.value == 0 && !invertResult)
 					{
 						// Skipping Code
 						var statements = this.internalParse();
+						this.poundIfData[poundIfLevel]=0;
 						return { "return" :false,statements:[]};
 					}
 					else
 					{
 						// Include Code
 						var statements = this.internalParse();
-						if(this.poundIfData[this.poundIfLevel]==1)
+						this.poundIfData[this.poundIfLevel]=1;
+						return { "return" :false,statements:statements};
+					}
+					console.log("Number:[",number,"]");
+				}
+				else if (this.lookAhead("defined"))
+				{
+					var defineVar = "";
+					if(this.lookAhead("("))
+					{
+						if(this.identifierIncoming())
 						{
-							this.poundIfData[this.poundIfLevel]=1;
-							return { "return" :false,statements:statements};
+							defineVar = this.readIdentifier();
 						}
-						else
+						this.consume(")");
+					}
+					else
+					{
+						if(this.identifierIncoming())
 						{
-							this.unexpected("#elif evalutes to true along with other ");
+							defineVar = this.readIdentifier();
 						}
+					}
+					if(this.defines.includes(defineVar)&& !invertResult)
+					{
+						var statements = this.internalParse();
+						this.poundIfData[this.poundIfLevel]=1;
+						return { "return" :false,statements:statements};
+					}
+					else
+					{
+						var statements = this.internalParse();
+						this.poundIfData[this.poundIfLevel]=0;
+						return { "return" :false,statements:[]};
 					}
 				}
 				else
 				{
-					this.unexpected("Number");
-				}
-				while(this.currentCharacter!="\n")
-				{
-					this.next();
+					this.unexpected("Number or Defined");
 				}
 			}
 			else if(this.preprocessorLookAhead("else"))
@@ -3207,9 +3490,101 @@ const parser = (function(){
 			
 			else if(this.preprocessorLookAhead("pragma"))
 			{
-				while(this.currentCharacter!="\n")
+				if(this.lookAhead("alloc_text"))
 				{
-					this.next();
+
+				}
+				else if(this.lookAhead("auto_inline"))
+				{
+					if(this.lookAhead("on"))
+					{
+						// auto inline is on
+					}
+					else if(this.lookAhead("off"))
+					{
+						// auto inline is off
+					}
+					else
+					{
+						this.unexpected("on or off expected after auto_inline");
+					}
+				}
+				else if(this.lookAhead("bss_seg"))
+				{
+					// add compiler details to the object file
+				}
+				else if(this.lookAhead("check_stack"))
+				{
+
+				}
+				else if(this.lookAhead("code_seg"))
+				{
+
+				}
+				else if(this.lookAhead("comment"))
+				{
+					this.consume("(");
+					if(this.lookAhead("compiler"))
+					{
+						// Add compiler name and version to object file
+					}
+					else if ( this.lookAhead("lib"))
+					{
+						var lib= [];
+						this.consume("\"");
+						while(!this.currentCharacter=='\"')
+						{
+							lib.push(this.currentCharacter);
+							this.next();
+						}
+						this.consume("\"");
+					}
+					else if(this.lookAhead("linker"))
+					{
+						this.consume("\"");
+						this.consume("/");
+						if(this.lookAhead("defaultlib"))
+						{
+							
+						}
+						else if ( this.lookAhead("export"))
+						{
+
+						}
+						else if ( this.lookAhead("include"))
+						{
+
+						}
+						else if ( this.lookAhead("manifestdependency"))
+						{
+
+						}
+						else if ( this.lookAhead("merge"))
+						{
+
+						}
+						else if ( this.lookAhead("section"))
+						{
+
+						}
+						this.consume("\"");
+					}
+					else if(this.lookAhead("user"))
+					{
+
+					}
+					this.consume(")");
+				}
+				else if(this.lookAhead("once"))
+				{
+					// include the header file once
+				}
+				else if(this.lookAhead("pack"))
+				{
+					// include the header file once
+				}
+				else if(this.lookAhead("section"))
+				{
 				}
 			}
 			else if(this.preprocessorLookAhead("error"))

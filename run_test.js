@@ -31,6 +31,7 @@ else if (process.argv.length === 2) {
 			clearModuleCache("./cparser");
 			parser = require("./cparser");
 			parser.setRelativePath("test/");
+			parser.addIncludePath("C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.26100.0\\ucrt");
 			if (err) {
 				console.error("Error reading file:", err);
 				return;

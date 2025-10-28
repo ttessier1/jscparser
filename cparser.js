@@ -577,6 +577,7 @@ const parser = (function(){
 	return {
 		lastCharacter:0,
 		currentCharacter:0,
+		includePaths:[],
 		nextCharacter:0,
 		statements:[],
 		keywords:[],
@@ -596,6 +597,10 @@ const parser = (function(){
 		setRelativePath:function(path)
 		{
 			this.relativePath=path;
+		},
+		addIncludePathLfunction(path)
+		{
+			this.includePaths.push(path);
 		},
 		setFile:process.env.NODE_ENV === 'test'? function(text,name)
 		{
@@ -3243,7 +3248,7 @@ const parser = (function(){
 				}
 				else if ( this.lookAhead("<"))
 				{
-					path=[];
+					var path=[];
 					statement.typedef = {type:"include",pathStyle:"includeRelative"};
 					while(this.currentCharacter!=">")
 					{
@@ -3252,7 +3257,24 @@ const parser = (function(){
 					}
 					statement.typedef.path = path.join("");
 					this.consume(">");
+					const directoryPath = this.relativePath
 					statements.push(statement);
+					
+					this.fileStack.push({file:file,currentCharacter:this.currentCharacter,nextCharacter:this.nextCharacter,lastCharacter:this.lastCharacter});
+					file={};
+					file.line==-1;
+					file.characterPosition=-1;
+					file.lineCharacterPosition=-1;
+					
+					fs.readFile(path.join(directoryPath,filepath.join("")), 'utf8', (err, data) => {
+						statement.body=this.parse(data,filepath.join(""));
+					});
+					statements.push(statement);
+					save = this.fileStack.pop();
+					file = save.file;
+					this.currentCharacter = save.currentCharacter;
+					this.nextCharacter = save.nextCharacter;
+					this.lastCharacter = save.lastCharacter;
 				}
 				else
 				{
@@ -3335,7 +3357,19 @@ const parser = (function(){
 					}
 					else if(this.lookAhead("("))
 					{
-						this.unexpected("Define Expressions Not Yet Implemented");
+
+						var args = [];
+						while(this.currentCharacter)
+						{
+							args.push(this.parseExpression());
+							if(!this.lookAhead(","))
+							{
+								break;
+							}
+						}
+						this.consume(")");
+
+						console.log("Args:",args);
 					}
 					else
 					{
@@ -3575,16 +3609,153 @@ const parser = (function(){
 					}
 					this.consume(")");
 				}
-				else if(this.lookAhead("once"))
+				else if(this.lookAhead("component"))
 				{
-					// include the header file once
+
+				}
+				else if (this.lookAhead("conform"))
+				{
+					
+				}
+				else if (this.lookAhead("const_seg"))
+				{
+					
+				}
+				else if (this.lookAhead("data_seg"))
+				{
+					
+				}
+				else if (this.lookAhead("deprecated"))
+				{
+					
+				}
+				else if (this.lookAhead("detect_mismatch"))
+				{
+					
+				}
+				else if(this.lookAhead("execution_character_set"))
+				{
+
+				}
+				else if(this.lookAhead("fenv_access"))
+				{
+
+				}
+				else if(this.lookAhead("float_control"))
+				{
+
+				}
+				else if(this.lookAhead("fp_contract"))
+				{
+
+				}
+				else if(this.lookAhead("function"))
+				{
+
+				}
+				else if(this.lookAhead("hdrstop"))
+				{
+
+				}
+				else if(this.lookAhead("include_alias"))
+				{
+
+				}
+				else if(this.lookAhead("init_seg"))
+				{
+
+				}
+				else if(this.lookAhead("inline_depth"))
+				{
+
+				}
+				else if(this.lookAhead("inline_recursion"))
+				{
+
+				}
+				else if(this.lookAhead("intrinsic"))
+				{
+
+				}
+				else if(this.lookAhead("loop"))
+				{
+
+				}
+				else if(this.lookAhead("make_public"))
+				{
+
+				}
+				else if(this.lookAhead("managed"))
+				{
+
+				}
+				else if(this.lookAhead("unmanaged"))
+				{
+
+				}
+				else if(this.lookAhead("message"))
+				{
+
+				}
+				else if(this.lookAhead("omp"))
+				{
+
+				}
+				else if(this.lookAhead("optimize"))
+				{
+
 				}
 				else if(this.lookAhead("pack"))
 				{
-					// include the header file once
+
+				}
+				else if(this.lookAhead("pointers_to_members"))
+				{
+
+				}
+				else if(this.lookAhead("pop_macro"))
+				{
+
+				}
+				else if(this.lookAhead("push_macro"))
+				{
+
+				}
+				else if(this.lookAhead("region"))
+				{
+
+				}
+				else if(this.lookAhead("end_region"))
+				{
+					
+				}
+				else if(this.lookAhead("runtime_checks "))
+				{
+
 				}
 				else if(this.lookAhead("section"))
 				{
+
+				}
+				else if(this.lookAhead("setlocale"))
+				{
+
+				}
+				else if(this.lookAhead("strict_gs_check"))
+				{
+
+				}
+				else if(this.lookAhead("system_header"))
+				{
+
+				}
+				else if(this.lookAhead("vtordisp"))
+				{
+
+				}
+				else if(this.lookAhead("warning"))
+				{
+					console.log("Pragma Warning:",)
 				}
 			}
 			else if(this.preprocessorLookAhead("error"))

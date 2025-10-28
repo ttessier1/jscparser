@@ -598,7 +598,7 @@ const parser = (function(){
 		{
 			this.relativePath=path;
 		},
-		addIncludePathLfunction(path)
+		addIncludePath:function(path)
 		{
 			this.includePaths.push(path);
 		},
@@ -1892,7 +1892,7 @@ const parser = (function(){
 				}
 			}
 			if(this.lookAhead("(")){
-				if(definitionIncomming())
+				if(this.definitionIncomming())
 				{
 					expression = {
 						type:"CastExpression",
@@ -3033,35 +3033,42 @@ const parser = (function(){
 					console.log("Unhandled CallExpression type:",base.type);
 			}
 			process.stdout.write("(");
-			for( arg in args)
+			if(args != undefined)
 			{
-				switch(args[arg].type)
+				for( arg in args)
 				{
-					case "Literal":
-						this.printLiteral(args[arg])
-					break;
-					case "Definition":
-						switch(args[arg].defType.type)
+					if(args[arg]!=undefined)
+					{
+						console.log("Args:",args[arg]);
+						switch(args[arg].type)
 						{
-							case "Type":
-								for(var modifier in args[arg].defType.modifier)
-								{
-									process.stdout.write(args[arg].defType.modifier[modifier] + " ");
-								}
-								process.stdout.write(args[arg].defType.name + " ");
-								process.stdout.write("");
+							case "Literal":
+								this.printLiteral(args[arg])
 							break;
-							case "Pointer":
-							console.log("Print Pointer");
-								this.printPointer(args[arg]);
-								//console.log("Pointer:",args[arg].defType);
+							case "Definition":
+								switch(args[arg].defType.type)
+								{
+									case "Type":
+										for(var modifier in args[arg].defType.modifier)
+										{
+											process.stdout.write(args[arg].defType.modifier[modifier] + " ");
+										}
+										process.stdout.write(args[arg].defType.name + " ");
+										process.stdout.write("");
+									break;
+									case "Pointer":
+									console.log("Print Pointer");
+										this.printPointer(args[arg]);
+										//console.log("Pointer:",args[arg].defType);
+									break;
+									default:
+										console.log("Unhandled argument deftype type :",args[arg].defType.type);
+								}
 							break;
 							default:
-								console.log("Unhandled argument deftype type :",args[arg].defType.type);
+								console.log("Unhandled argument type :",args[arg].type);
 						}
-					break;
-					default:
-						console.log("Unhandled argument type :",args[arg].type);
+					}
 				}
 			}
 			process.stdout.write(");\n");
@@ -3248,26 +3255,66 @@ const parser = (function(){
 				}
 				else if ( this.lookAhead("<"))
 				{
-					var path=[];
+					var includePath=[];
+					var includeFileName="";
+					var actualIncludePath="";
 					statement.typedef = {type:"include",pathStyle:"includeRelative"};
 					while(this.currentCharacter!=">")
 					{
-						path.push(this.currentCharacter);
+						includePath.push(this.currentCharacter);
 						this.next();
 					}
-					statement.typedef.path = path.join("");
+					includeFileName = includePath.join("");
+					statement.typedef.path = includePath.join("");
 					this.consume(">");
 					const directoryPath = this.relativePath
 					statements.push(statement);
-					
+					var continueSearch = true;
+					/* Here we must find the file we are looking for*/
+					for (includeFile in this.includePaths)
+					{
+						if (fs.existsSync(this.includePaths[includeFile])) {
+							files = fs.readdirSync(this.includePaths[includeFile]);
+							for( index in files)
+							{
+								if(files[index]==includeFileName)
+								{
+									continueSearch=false;
+									actualIncludePath = path.join(this.includePaths[includeFile],includeFileName);
+									break;
+								}
+								else
+								{
+									//console.log("file:",files[index],"!=",includeFileName);
+								}
+							}
+							//console.log("After Read Directory");
+							if(!continueSearch)
+							{
+								break;
+							}
+						}
+						else{
+							console.log("Path NOT Exists");
+						}
+					}
+					if(!continueSearch)
+					{
+						
+					}
+					else
+					{
+						this.unexpected(["Can't find include file:[",includeFileName,"]"].join(""));
+					}
+
 					this.fileStack.push({file:file,currentCharacter:this.currentCharacter,nextCharacter:this.nextCharacter,lastCharacter:this.lastCharacter});
 					file={};
 					file.line==-1;
 					file.characterPosition=-1;
 					file.lineCharacterPosition=-1;
 					
-					fs.readFile(path.join(directoryPath,filepath.join("")), 'utf8', (err, data) => {
-						statement.body=this.parse(data,filepath.join(""));
+					fs.readFile(actualIncludePath, 'utf8', (err, data) => {
+						statement.body=this.parse(data,actualIncludePath);
 					});
 					statements.push(statement);
 					save = this.fileStack.pop();
@@ -3368,8 +3415,11 @@ const parser = (function(){
 							}
 						}
 						this.consume(")");
+						var expression = this.parseExpression();
 
 						console.log("Args:",args);
+						console.log("Expression:",expression);
+						
 					}
 					else
 					{

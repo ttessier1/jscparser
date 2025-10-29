@@ -1601,12 +1601,24 @@ const parser = (function(){
 				return false;
 			}
 		},
-		readIdentifier:function(keepBlanks)
+		readIdentifier:function(keepBlanks,isExternal)
 		{
+			var external = isExternal || false;
 			var identifier = this.read(/[a-zA-Z0-9_]/,"Identifier",/[a-zA-Z_]/,keepBlanks);
 			if(!keywords.includes(identifier))
 			{
-				return identifier;
+				if(external && identifier.length < maxSignificantExternalIdentifierCharacters )
+				{
+					return identifier
+				}
+				else if(!external && identifier.length < maxSignificantInternalIdentifierCharacters )
+				{
+					return identifier;
+				}
+				else
+				{
+					this.unexpected("internal identifier length:[",identifier,"] [",identifier.length,"]");
+				}
 			}
 			else
 			{

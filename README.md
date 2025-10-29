@@ -27,8 +27,8 @@ Add C standard parse limits for strings, if nesting, etc- <b>Partially Implement
 &nbsp;&nbsp;&nbsp;&nbsp;TODO: Add limits for max struct or union members 1023<b>Implemented</b><br>
 &nbsp;&nbsp;&nbsp;&nbsp;TODO: Add limits for max Enum members 1023<b> Implemented</b><br>
 &nbsp;&nbsp;&nbsp;&nbsp;TODO: Add limits for max union nesting 63<b>Not Done</b><br>
-&nbsp;&nbsp;&nbsp;&nbsp;TODO: Add limits for max arguments per function call 127<b>Not Done</b><br>
-&nbsp;&nbsp;&nbsp;&nbsp;TODO: Add limits for max parameters per function definition 127<b>Not Done</b><br>
+&nbsp;&nbsp;&nbsp;&nbsp;TODO: Add limits for max arguments per function call 127<b>Implemented</b><br>
+&nbsp;&nbsp;&nbsp;&nbsp;TODO: Add limits for max parameters per function definition 127<b>Implemented</b><br>
 &nbsp;&nbsp;&nbsp;&nbsp;TODO: Add limits for max macro identifiers per translation unit 4095<b>Not Done</b><br>
 
 

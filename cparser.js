@@ -866,10 +866,16 @@ const parser = (function(){
 						
 						if(this.lookAhead(";"))
 						{
-							
+							if(def.arguments.length>maxParametersPerFunctionDefinition)
+							{
+								this.unexpected("Too many arguments in function declaration");
+							}
 							def.type = "FunctionDeclaration";
 						}else{
-							
+							if(def.arguments.length>maxParametersPerFunctionDefinition)
+							{
+								this.unexpected("Too many arguments in function definition");
+							}
 							this.skipBlanks();
 							def.type = "FunctionDefinition";
 							def.body = this.parseBody();
@@ -2011,6 +2017,10 @@ const parser = (function(){
 				while(this.currentCharacter)
 				{
 					args.push(this.parseExpression());
+					if(args.length>maxArgumentsPerFunctionCall)
+					{
+						this.unexpected("Too many arguments in function call");
+					}
 					if(!this.lookAhead(","))
 					{
 						break;

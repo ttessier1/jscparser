@@ -21,8 +21,8 @@ Add C standard parse limits for strings, if nesting, etc- <b>Partially Implement
 &nbsp;&nbsp;&nbsp;&nbsp;TODO: Add limits for line length <b>Implemented</b><br>
 &nbsp;&nbsp;&nbsp;&nbsp;TODO: Add limits for if statement branches <b>Implemented</b><br>
 &nbsp;&nbsp;&nbsp;&nbsp;TODO: Add limits for if statement conditions <b>Not Done</b><br>
-&nbsp;&nbsp;&nbsp;&nbsp;TODO: Add limits for max Significant Internal Identifier Characters <b>Not Done</b><br>
-&nbsp;&nbsp;&nbsp;&nbsp;TODO: Add limits for max Significant Externsl Identifier Characters <b>Not Done</b><br>
+&nbsp;&nbsp;&nbsp;&nbsp;TODO: Add limits for max Significant Internal Identifier Characters <b>Implemented</b><br>
+&nbsp;&nbsp;&nbsp;&nbsp;TODO: Add limits for max Significant Externsl Identifier Characters <b>Implemented</b><br>
 &nbsp;&nbsp;&nbsp;&nbsp;TODO: Add limits for max Identifiers in a scope block<b>Not Done</b><br>
 &nbsp;&nbsp;&nbsp;&nbsp;TODO: Add limits for max struct or union members 1023<b>Implemented</b><br>
 &nbsp;&nbsp;&nbsp;&nbsp;TODO: Add limits for max Enum members 1023<b> Implemented</b><br>

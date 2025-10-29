@@ -2358,8 +2358,6 @@ const parser = (function(){
 			return val.join("");
 		},
 		peekBinaryOperation:function(){
-			
-
 			var _line=file.line;
 			var _lineCharacterPosition=file.lineCharacterPosition;
 			var _characterPosition = file.characterPosition;
@@ -2425,7 +2423,6 @@ const parser = (function(){
 		},
 		print:function(theExpression)
 		{
-			
 			for(var statement in theExpression)
 			{
 				this.printTabs();

@@ -182,6 +182,7 @@ const escapeSequences = {
 	"v":"\v" // vertical tab
 };
 
+const maxConditionalInStatement = 63;
 const maxNestingLevelBlocks= 127;
 const maxNestingLevelConditionals = 63;
 const maxNestingLevelPointer = 12;
@@ -593,6 +594,8 @@ const parser = (function(){
 		poundIfLevel:0,
 		poundIfData:{},
 		relativePath:"./",
+		scopeVariables:{},
+		defines:{},
 		fileStack:[],// save file context until done parsing 3s then restore the file context
 		setRelativePath:function(path)
 		{
@@ -1435,6 +1438,7 @@ const parser = (function(){
 			var modifierCount=0;
 			var foundType = false;
 			var typeCount=0;
+			var isExternal=false;
 			var nextIdentifier="";
 			do{
 				var read = false;
@@ -1444,6 +1448,10 @@ const parser = (function(){
 					{
 						if(this.typeModifiers[index] != lastModifier)
 						{
+							if(lastModifier=="extern")
+							{
+								isExternal=true;
+							}
 							lastModifier = this.typeModifiers[index];
 							def.modifier.push(this.typeModifiers[index]);
 							read=true;
@@ -1464,9 +1472,8 @@ const parser = (function(){
 							}
 							if(!nameless)
 							{
-								name = this.readIdentifier();
+								name = this.readIdentifier(false,isExternal);
 							}
-							
 							while(this.lookAhead("["))
 							{
 								def = {
@@ -2386,6 +2393,7 @@ const parser = (function(){
 		},
 		parseBinary:function(left,minPrec){
 			var lookAhead = this.peekBinaryOperation();
+			var conditionCount=0;
 			while(lookAhead && this.operations[lookAhead]>= minPrec)
 			{
 				
@@ -2406,6 +2414,11 @@ const parser = (function(){
 					right:right,
 					pos:position
 				};
+				conditionCount++;
+				if(conditionCount>maxConditionalInStatement)
+				{
+					this.unexpected(["Too many if conditions:[",conditionCount,"]"].join(""));
+				}
 				
 			}
 			return left;
@@ -3305,26 +3318,17 @@ const parser = (function(){
 									actualIncludePath = path.join(this.includePaths[includeFile],includeFileName);
 									break;
 								}
-								else
-								{
-									//console.log("file:",files[index],"!=",includeFileName);
-								}
 							}
-							//console.log("After Read Directory");
 							if(!continueSearch)
 							{
 								break;
 							}
 						}
 						else{
-							console.log("Path NOT Exists");
+							this.unexpected(["Path Does NOT Exist:[",includeFileName,"]"].join(""));
 						}
 					}
-					if(!continueSearch)
-					{
-						
-					}
-					else
+					if(continueSearch)
 					{
 						this.unexpected(["Can't find include file:[",includeFileName,"]"].join(""));
 					}
